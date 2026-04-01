@@ -187,11 +187,10 @@ private fun DashboardTopBar(
                 )
             }
 
-            IconButton(onClick = onSettingsClick) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings"
-                )
+            IconButton(
+                onClick = onSettingsClick
+            ) {
+                Icon(Icons.Default.Settings, contentDescription = "Settings")
             }
         }
     )

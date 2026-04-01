@@ -15,6 +15,8 @@ import com.example.focustimerapp.feature.task.EditTaskScreen
 import com.example.focustimerapp.feature.task.TaskDetailScreen
 import com.example.focustimerapp.feature.timer.TaskExecutionScreen
 import com.example.focustimerapp.feature.timer.TaskExecutionViewModel
+import com.example.focustimerapp.ui.theme.ThemeViewModel
+import com.example.focustimerapp.feature.settings.SettingsScreen
 import kotlinx.coroutines.launch
 
 /*
@@ -23,15 +25,15 @@ import kotlinx.coroutines.launch
 object Routes {
 
     const val DASHBOARD = "dashboard"
-
     const val CREATE_TASK = "create_task"
     const val EDIT_TASK = "edit_task/{taskId}"
     const val TASK_EXECUTION = "task_execution/{taskId}"
     const val TASK_DETAIL = "task_detail/{taskId}"
-
     const val CLIENTS = "clients"
     const val ADD_CLIENT = "clients/add"
     const val EDIT_CLIENT = "clients/edit/{clientId}"
+
+    const val SETTINGS = "settings"
 
     fun editTask(taskId: Long) = "edit_task/$taskId"
     fun taskExecution(taskId: Long) = "task_execution/$taskId"
@@ -44,7 +46,9 @@ object Routes {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavHost() {
+fun AppNavHost(
+    themeViewModel: ThemeViewModel
+) {
 
     val navController = rememberNavController()
 
@@ -72,6 +76,9 @@ fun AppNavHost() {
                 },
                 onCompletedTaskClick = { taskId ->
                     navController.navigate(Routes.taskDetail(taskId))
+                },
+                onSettingsClick = {
+                    navController.navigate(Routes.SETTINGS)
                 }
             )
         }
@@ -254,6 +261,17 @@ fun AppNavHost() {
                     navController.popBackStack()
                 }
             }
+        }
+
+        composable(Routes.SETTINGS) {
+            val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
+            SettingsScreen(
+                onBackClick = { navController.popBackStack() },
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = {
+                    themeViewModel.toggleTheme()
+                }
+            )
         }
     }
 }
