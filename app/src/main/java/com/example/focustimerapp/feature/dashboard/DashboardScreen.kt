@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
@@ -51,6 +53,7 @@ fun DashboardScreen(
         uiState.tasks.filter { it.isCompleted }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             DashboardTopBar(
                 onClientsClick = onClientsClick,
@@ -65,7 +68,7 @@ fun DashboardScreen(
                 .padding(padding),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        ){
 
             item {
                 SummaryCard(
@@ -163,17 +166,32 @@ private fun DashboardTopBar(
     onClientsClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
-
     TopAppBar(
-        title = { Text("FocusTimerApp") },
+        title = {
+            Text(
+                text = "FocusTimerApp",
+                color = MaterialTheme.colorScheme.onPrimary,
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+            actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+        ),
         actions = {
-
             IconButton(onClick = onClientsClick) {
-                Icon(Icons.Default.Work, contentDescription = "Clients")
+                Icon(
+                    imageVector = Icons.Default.Work,
+                    contentDescription = "Clients"
+                )
             }
 
             IconButton(onClick = onSettingsClick) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings")
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings"
+                )
             }
         }
     )
@@ -209,49 +227,59 @@ private fun SummaryCard(
     totalEarningsCents: Long,
     totalSeconds: Int
 ) {
-
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.small
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(20.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
 
             Column {
 
                 Text(
-                    "Total Earnings",
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = "Total Earnings",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
+                Spacer(modifier = Modifier.height(6.dp))
+
                 Text(
-                    formatCurrencyFromCents(totalEarningsCents),
-                    style = MaterialTheme.typography.headlineLarge
+                    text = formatCurrencyFromCents(totalEarningsCents),
+                    style = MaterialTheme.typography.headlineMedium
                 )
             }
 
-            Column(horizontalAlignment = Alignment.End) {
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
 
                 Text(
-                    "Total Hours",
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = "Total Hours",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
+                Spacer(modifier = Modifier.height(6.dp))
+
                 Text(
-                    formatSecondsToHours(totalSeconds),
-                    style = MaterialTheme.typography.headlineLarge
+                    text = formatSecondsToHours(totalSeconds),
+                    style = MaterialTheme.typography.headlineMedium
                 )
             }
         }
     }
 }
+
 
 @Composable
 private fun ActiveTaskCard(
@@ -260,58 +288,76 @@ private fun ActiveTaskCard(
     onEditClick: (Long) -> Unit,
     onPlayClick: () -> Unit
 ) {
-
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.small
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
 
                 Text(
                     text = task.description,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
 
                     RateChip(task.hourlyRateCents)
 
                     task.scheduledStartDate?.let {
-
                         AssistChip(
                             onClick = {},
                             label = { Text(it) }
                         )
                     }
 
-                    IconButton(onClick = { onEditClick(task.id) }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit task")
+                    IconButton(
+                        onClick = { onEditClick(task.id) }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit task"
+                        )
                     }
                 }
             }
 
+            Spacer(modifier = Modifier.width(12.dp))
+
             FilledTonalIconButton(
                 onClick = onPlayClick,
                 enabled = !isAnotherTaskRunning,
-                modifier = Modifier.size(64.dp),
-                shape = MaterialTheme.shapes.small
+                modifier = Modifier.size(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = IconButtonDefaults.filledTonalIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
-                Text("▶")
+                Text(
+                    text = "▶",
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
         }
     }
@@ -322,45 +368,55 @@ private fun CompletedTaskCard(
     task: Task,
     onClick: () -> Unit
 ) {
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = MaterialTheme.shapes.small
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
 
                 Text(
-                    task.description,
-                    style = MaterialTheme.typography.titleLarge,
+                    text = task.description,
+                    style = MaterialTheme.typography.titleMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 RateChip(task.hourlyRateCents)
             }
 
-            Column(horizontalAlignment = Alignment.End) {
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
 
                 Text(
-                    formatCurrencyFromCents(task.totalEarnedCents),
+                    text = formatCurrencyFromCents(task.totalEarnedCents),
                     style = MaterialTheme.typography.titleMedium
                 )
 
+                Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
-                    formatSecondsToHours(task.totalSeconds),
-                    style = MaterialTheme.typography.bodySmall
+                    text = formatSecondsToHours(task.totalSeconds),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -376,6 +432,7 @@ private fun RateChip(hourlyRateCents: Long) {
     )
 }
 
+
 @Composable
 private fun SectionHeaderWithFab(
     title: String,
@@ -383,21 +440,47 @@ private fun SectionHeaderWithFab(
 ) {
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+
+        /*
+         Force correct spacing between title and FAB
+         */
+        horizontalArrangement = Arrangement.SpaceBetween,
+
         verticalAlignment = Alignment.CenterVertically
     ) {
 
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.weight(1f)
+            style = MaterialTheme.typography.titleLarge
         )
 
-        FloatingActionButton(onClick = onFabClick) {
-            Icon(Icons.Default.Add, contentDescription = "Add task")
+        FloatingActionButton(
+            onClick = onFabClick,
+
+            /*
+             Explicit circular shape
+             */
+            shape = CircleShape,
+
+            /*
+             Force correct FAB size
+             */
+            modifier = Modifier.size(56.dp),
+
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Add task"
+            )
         }
     }
 }
+
 
 @Composable
 private fun SectionTitle(title: String) {

@@ -53,20 +53,38 @@ fun ClientScreen(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("Clients")
 
+                        Text(
+                            text = "Clients",
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+
+                        /*
+                         Show total number of clients as a badge
+                         */
                         if (clients.isNotEmpty()) {
                             Badge(
-                                containerColor = MaterialTheme.colorScheme.primary
+                                containerColor = MaterialTheme.colorScheme.onPrimary
                             ) {
                                 Text(
                                     text = clients.size.toString(),
-                                    color = MaterialTheme.colorScheme.onPrimary
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
                     }
                 },
+
+                /*
+                 Apply primary color to match Dashboard
+                 */
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -75,11 +93,18 @@ fun ClientScreen(
                         )
                     }
                 },
+
                 actions = {
-                    FilledTonalIconButton(
+                    /*
+                     Use circular add button for better visual consistency
+                     */
+                    FloatingActionButton(
                         onClick = onAddClientClick,
-                        shape = MaterialTheme.shapes.small,
-                        modifier = Modifier.padding(end = 8.dp)
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .size(40.dp),
+                        containerColor = MaterialTheme.colorScheme.onPrimary,
+                        contentColor = MaterialTheme.colorScheme.primary
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,

@@ -41,10 +41,28 @@ fun CreateTaskScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create Task") },
+                title = {
+                    Text(
+                        text = "Create Task",
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                },
+
+                /*
+                 Apply primary color to keep consistency across all screens
+                 */
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back"
+                        )
                     }
                 }
             )

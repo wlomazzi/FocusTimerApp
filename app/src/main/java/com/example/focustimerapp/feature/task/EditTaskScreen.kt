@@ -17,7 +17,6 @@ import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTaskScreen(
@@ -36,6 +35,9 @@ fun EditTaskScreen(
 
     val task = taskState
 
+    /*
+     Form state initialization
+     */
     var description by remember(task?.id) {
         mutableStateOf(task?.description ?: "")
     }
@@ -68,6 +70,9 @@ fun EditTaskScreen(
         SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     }
 
+    /*
+     Opens native Android date picker
+     */
     fun openDatePicker() {
         DatePickerDialog(
             context,
@@ -84,7 +89,22 @@ fun EditTaskScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Task") },
+                title = {
+                    Text(
+                        text = "Edit Task",
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                },
+
+                /*
+                 Apply primary color to match app theme
+                 */
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -178,6 +198,9 @@ fun EditTaskScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            /*
+             Save button updates the task and persists changes
+             */
             Button(
                 onClick = {
                     task?.let { originalTask ->
