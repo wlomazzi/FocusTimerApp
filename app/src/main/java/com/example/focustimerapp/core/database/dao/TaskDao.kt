@@ -22,6 +22,23 @@ interface TaskDao {
     """)
     fun observeTasksWithStats(): Flow<List<TaskWithStats>>
 
+    @Query("""
+    UPDATE tasks
+    SET status = :status,
+        total_seconds = :totalSeconds,
+        total_earned_cents = :totalEarnedCents,
+        updated_at = :updatedAt
+    WHERE id = :taskId
+    """)
+    suspend fun updateTaskAfterSession(
+        taskId: Long,
+        status: TaskStatus,
+        totalSeconds: Long,
+        totalEarnedCents: Long,
+        updatedAt: String
+    )
+
+
     @Query("SELECT * FROM tasks ORDER BY created_at DESC")
     fun observeAllTasks(): Flow<List<TaskEntity>>
 

@@ -15,6 +15,7 @@ import javax.inject.Inject
  * - WorkSession = immutable blocks
  * - endedAt == null => running
  * - Task.status = source of truth
+ * - Totals MUST be persisted in Task
  */
 class WorkSessionRepositoryImpl @Inject constructor(
     private val workSessionDao: WorkSessionDao,
@@ -50,12 +51,8 @@ class WorkSessionRepositoryImpl @Inject constructor(
 
         val sessionId = workSessionDao.insert(session)
 
-        // UPDATE TASK STATUS
-        taskDao.updateStatus(
-            taskId = taskId,
-            status = TaskStatus.RUNNING,
-            updatedAt = now.toString()
-        )
+        // Update task after change
+        updateTaskAfterSessionChange(taskId)
 
         return sessionId
     }
@@ -82,12 +79,8 @@ class WorkSessionRepositoryImpl @Inject constructor(
             updatedAt = now
         )
 
-        // UPDATE TASK STATUS
-        taskDao.updateStatus(
-            taskId = session.taskId,
-            status = TaskStatus.PAUSED,
-            updatedAt = now.toString()
-        )
+        // Update task after change
+        updateTaskAfterSessionChange(session.taskId)
     }
 
     /**
@@ -113,14 +106,38 @@ class WorkSessionRepositoryImpl @Inject constructor(
                 updatedAt = now
             )
 
-            // UPDATE TASK STATUS
-            taskDao.updateStatus(
-                taskId = session.taskId,
-                status = TaskStatus.FINISHED,
-                updatedAt = now.toString()
-            )
-
+            // Update task after change
+            updateTaskAfterSessionChange(session.taskId)
         }
+    }
+
+    /**
+     * Central rule: update BOTH status and totals
+     */
+    private suspend fun updateTaskAfterSessionChange(taskId: Long) {
+        val now = LocalDateTime.now()
+
+        val sessions = workSessionDao.getSessionsForTask(taskId)
+
+        val hasActive = sessions.any { it.endedAt == null }
+        val hasSessions = sessions.isNotEmpty()
+
+        val newStatus = when {
+            hasActive -> TaskStatus.RUNNING
+            hasSessions -> TaskStatus.FINISHED
+            else -> TaskStatus.PENDING
+        }
+
+        // Get totals from DB
+        val totals = workSessionDao.getTaskTotals(taskId)
+
+        taskDao.updateTaskAfterSession(
+            taskId = taskId,
+            status = newStatus,
+            totalSeconds = totals.totalSeconds,
+            totalEarnedCents = totals.totalEarnedCents,
+            updatedAt = now.toString()
+        )
     }
 
     override fun observeRunningSession(): Flow<WorkSession?> =

@@ -1,6 +1,7 @@
 package com.example.focustimerapp.core.database.dao
 
 import androidx.room.*
+import com.example.focustimerapp.core.database.model.TaskTotals
 import com.example.focustimerapp.core.database.entity.WorkSession
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDateTime
@@ -85,6 +86,15 @@ interface WorkSessionDao {
         """
     )
     suspend fun getSessionsForTask(taskId: Long): List<WorkSession>
+
+    @Query("""
+    SELECT 
+        COALESCE(SUM(duration_seconds), 0) as totalSeconds,
+        COALESCE(SUM(earned_cents), 0) as totalEarnedCents
+    FROM work_sessions
+    WHERE task_id = :taskId
+    """)
+    suspend fun getTaskTotals(taskId: Long): TaskTotals
 
     /**
      * Deletes all sessions for a given task.
