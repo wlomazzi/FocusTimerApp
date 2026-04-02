@@ -139,12 +139,10 @@ fun DashboardScreen(
                     items = completedTasks,
                     key = { it.id }
                 ) { task ->
-
                     CompletedTaskCard(
                         task = task,
-                        onClick = {
-                            onCompletedTaskClick(task.id)
-                        }
+                        onDetailsClick = onCompletedTaskClick,
+                        onEditClick = onEditTaskClick
                     )
                 }
             }
@@ -362,19 +360,17 @@ private fun ActiveTaskCard(
 @Composable
 private fun CompletedTaskCard(
     task: Task,
-    onClick: () -> Unit
-) {
+    onDetailsClick: (Long) -> Unit,
+    onEditClick: (Long) -> Unit
+){
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -382,6 +378,9 @@ private fun CompletedTaskCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
 
+            /*
+             Left side - Task basic information
+             */
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -398,6 +397,9 @@ private fun CompletedTaskCard(
                 RateChip(task.hourlyRateCents)
             }
 
+            /*
+             Right side - Values + actions
+             */
             Column(
                 horizontalAlignment = Alignment.End
             ) {
@@ -414,6 +416,34 @@ private fun CompletedTaskCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+
+                    /*
+                     Edit action
+                     */
+                    IconButton(
+                        onClick = { onEditClick(task.id) }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit completed task"
+                        )
+                    }
+
+                    /*
+                     Details navigation
+                     */
+                    TextButton(
+                        onClick = { onDetailsClick(task.id) }
+                    ) {
+                        Text("Details")
+                    }
+                }
             }
         }
     }

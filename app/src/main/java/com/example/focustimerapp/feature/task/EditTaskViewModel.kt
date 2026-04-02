@@ -2,6 +2,7 @@ package com.example.focustimerapp.feature.task
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.focustimerapp.core.database.entity.WorkSession
 import com.example.focustimerapp.core.domain.model.Task
 import com.example.focustimerapp.core.domain.repository.ClientRepository
 import com.example.focustimerapp.core.domain.repository.TaskRepository
@@ -13,13 +14,14 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * EditTaskViewModel
+ * ViewModel responsible for editing an existing task.
  *
- * Responsible for:
- * - Loading a task by its identifier
- * - Exposing the selected task as observable state
- * - Providing available clients for selection
- * - Updating an existing task in the repository
+ * Responsibilities:
+ * - Load task details
+ * - Load all sessions associated with the task
+ * - Expose reactive state to the UI
+ * - Update task data
+ * - Delete individual sessions
  */
 @HiltViewModel
 class EditTaskViewModel @Inject constructor(
@@ -28,42 +30,63 @@ class EditTaskViewModel @Inject constructor(
 ) : ViewModel() {
 
     /*
-     * Internal mutable state that holds the task currently being edited.
-     * It is exposed as an immutable StateFlow to the UI layer.
+     * Holds the task currently being edited.
      */
     private val _task = MutableStateFlow<Task?>(null)
-
-    /*
-     * Public immutable view of the current task.
-     * The UI observes this state to reactively update fields.
-     */
     val task: StateFlow<Task?> = _task.asStateFlow()
 
     /*
-     * Stream of clients retrieved from the repository.
-     * Used to populate the client selection dropdown in the UI.
+     * Holds all sessions associated with the current task.
+     */
+    private val _sessions = MutableStateFlow<List<WorkSession>>(emptyList())
+    val sessions: StateFlow<List<WorkSession>> = _sessions.asStateFlow()
+
+    /*
+     * Provides the list of clients for the dropdown selection.
      */
     val clients = clientRepository.observeClients()
 
+    /*
+     * Stores the current task id for future refresh operations.
+     */
+    private var currentTaskId: Long? = null
+
     /**
-     * Loads a task from the repository using its unique identifier.
-     * This should be called when the Edit screen is opened.
+     * Loads the task and its related sessions.
      */
     fun loadTask(taskId: Long) {
+        currentTaskId = taskId
+
         viewModelScope.launch {
-            val result = taskRepository.getTaskById(taskId)
-            //println("DEBUG TASK RESULT: $result")
-            _task.value = result
+            _task.value = taskRepository.getTaskById(taskId)
+            refreshSessions()
         }
     }
 
     /**
-     * Persists updated task data to the repository.
-     * Should be triggered when the user confirms the update action.
+     * Updates the task in the repository.
      */
     fun updateTask(task: Task) {
         viewModelScope.launch {
             taskRepository.update(task)
         }
+    }
+
+    /**
+     * Deletes a work session and refreshes the local session list.
+     */
+    fun deleteSession(sessionId: Long) {
+        viewModelScope.launch {
+            taskRepository.deleteSession(sessionId)
+            refreshSessions()
+        }
+    }
+
+    /**
+     * Reloads all sessions associated with the current task.
+     */
+    private suspend fun refreshSessions() {
+        val taskId = currentTaskId ?: return
+        _sessions.value = taskRepository.getSessionsByTaskId(taskId)
     }
 }

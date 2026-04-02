@@ -15,8 +15,7 @@ interface WorkSessionDao {
     suspend fun update(session: WorkSession)
 
     /**
-     * Get current running session globally
-     * (only one allowed in the app)
+     * Returns the currently running session globally.
      */
     @Query(
         """
@@ -29,7 +28,7 @@ interface WorkSessionDao {
     suspend fun getRunningSession(): WorkSession?
 
     /**
-     * Observe current running session
+     * Observes the current running session.
      */
     @Query(
         """
@@ -42,7 +41,7 @@ interface WorkSessionDao {
     fun observeRunningSession(): Flow<WorkSession?>
 
     /**
-     * Get running session for a specific task
+     * Returns the running session for a specific task.
      */
     @Query(
         """
@@ -55,7 +54,7 @@ interface WorkSessionDao {
     suspend fun getRunningSessionForTask(taskId: Long): WorkSession?
 
     /**
-     * Close a session (used for pause/finish)
+     * Closes a session when paused or finished.
      */
     @Query(
         """
@@ -76,7 +75,7 @@ interface WorkSessionDao {
     )
 
     /**
-     * Get all sessions of a task
+     * Returns all sessions for a given task.
      */
     @Query(
         """
@@ -88,7 +87,7 @@ interface WorkSessionDao {
     suspend fun getSessionsForTask(taskId: Long): List<WorkSession>
 
     /**
-     * Delete all sessions of a task
+     * Deletes all sessions for a given task.
      */
     @Query(
         """
@@ -97,4 +96,15 @@ interface WorkSessionDao {
         """
     )
     suspend fun deleteSessionsForTask(taskId: Long)
+
+    /**
+     * Deletes a specific session by id.
+     */
+    @Query(
+        """
+        DELETE FROM work_sessions
+        WHERE id = :sessionId
+        """
+    )
+    suspend fun deleteSessionById(sessionId: Long)
 }
