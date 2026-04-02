@@ -84,7 +84,7 @@ fun DashboardScreen(
                 )
             }
 
-            //RUNNING TASK
+            //RUNNING / PAUSED TASKS
             if (runningSession != null && runningTask != null) {
 
                 item {
@@ -103,10 +103,8 @@ fun DashboardScreen(
                 }
             }
 
-            /*
-             PENDING TASKS
-             */
 
+            // PENDING TASKS
             item {
                 SectionHeaderWithFab(
                     title = "Pending Tasks",
@@ -129,10 +127,8 @@ fun DashboardScreen(
                 )
             }
 
-            /*
-             COMPLETED TASKS
-             */
 
+            // COMPLETED TASKS
             if (completedTasks.isNotEmpty()) {
 
                 item {
@@ -204,7 +200,7 @@ private fun PeriodFilterRow(
 
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
 
-        PeriodFilter.values().forEach { filter ->
+        PeriodFilter.entries.forEach { filter ->
 
             FilterChip(
                 selected = selected == filter,
@@ -347,7 +343,8 @@ private fun ActiveTaskCard(
                 onClick = onPlayClick,
                 enabled = !isAnotherTaskRunning,
                 modifier = Modifier.size(56.dp),
-                shape = RoundedCornerShape(12.dp),
+                //shape = RoundedCornerShape(12.dp),
+                shape = CircleShape,
                 colors = IconButtonDefaults.filledTonalIconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
@@ -483,7 +480,6 @@ private fun SectionHeaderWithFab(
 
 @Composable
 private fun SectionTitle(title: String) {
-
     Text(
         text = title,
         style = MaterialTheme.typography.headlineSmall
