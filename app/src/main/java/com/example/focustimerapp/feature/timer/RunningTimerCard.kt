@@ -22,10 +22,14 @@ fun RunningTimerCard(
     /*
      Determine current session state
      */
-    val isRunning = session.status == SessionStatus.RUNNING
+    //val isRunning = session.status == SessionStatus.RUNNING
+    val isRunning = session.endedAt == null
 
+    //val statusText =
+    //    if (isRunning) "RUNNING" else "PAUSED"
     val statusText =
-        if (isRunning) "RUNNING" else "PAUSED"
+        if (session.endedAt == null) "Running"
+        else "Completed"
 
     val statusColor =
         if (isRunning)

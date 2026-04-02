@@ -94,7 +94,7 @@ fun TaskDetailScreen(
                                 ) {
                                     Text("Duration: ${session.durationSeconds}s")
                                     Text("Earned: $${session.earnedCents / 100.0}")
-                                    Text("Status: ${session.status}")
+                                    //Text("Status: ${session.status}")
                                 }
                             }
                         }

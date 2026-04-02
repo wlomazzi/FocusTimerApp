@@ -30,6 +30,10 @@ data class WorkSession(
     @ColumnInfo(name = "started_at")
     val startedAt: LocalDateTime,
 
+    /**
+     * NULL = session still running
+     * NOT NULL = session finished
+     */
     @ColumnInfo(name = "ended_at")
     val endedAt: LocalDateTime? = null,
 
@@ -41,8 +45,6 @@ data class WorkSession(
 
     @ColumnInfo(name = "earned_cents")
     val earnedCents: Long = 0,
-
-    val status: SessionStatus,
 
     @ColumnInfo(name = "created_at")
     val createdAt: LocalDateTime = LocalDateTime.now(),

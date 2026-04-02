@@ -2,6 +2,7 @@ package com.example.focustimerapp.core.database
 
 import androidx.room.TypeConverter
 import com.example.focustimerapp.core.database.entity.SessionStatus
+import com.example.focustimerapp.core.database.entity.TaskStatus
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
@@ -27,5 +28,15 @@ class DatabaseConverters {
     @TypeConverter
     fun toSessionStatus(value: String): SessionStatus {
         return SessionStatus.valueOf(value)
+    }
+
+    @TypeConverter
+    fun fromTaskStatus(status: TaskStatus): String {
+        return status.name
+    }
+
+    @TypeConverter
+    fun toTaskStatus(value: String): TaskStatus {
+        return TaskStatus.valueOf(value)
     }
 }

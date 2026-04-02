@@ -1,42 +1,38 @@
 package com.example.focustimerapp.core.data.repository
 
+import com.example.focustimerapp.core.database.dao.TaskDao
 import com.example.focustimerapp.core.database.dao.WorkSessionDao
-import com.example.focustimerapp.core.database.entity.SessionStatus
+import com.example.focustimerapp.core.database.entity.TaskStatus
 import com.example.focustimerapp.core.database.entity.WorkSession
 import com.example.focustimerapp.core.domain.repository.WorkSessionRepository
 import kotlinx.coroutines.flow.Flow
+import java.time.Duration
 import java.time.LocalDateTime
 import javax.inject.Inject
 
 /*
- * Concrete implementation of WorkSessionRepository.
- * Handles persistence and business rules for work sessions.
+ * Final architecture:
+ * - WorkSession = immutable blocks
+ * - endedAt == null => running
+ * - Task.status = source of truth
  */
 class WorkSessionRepositoryImpl @Inject constructor(
-    private val workSessionDao: WorkSessionDao
+    private val workSessionDao: WorkSessionDao,
+    private val taskDao: TaskDao
 ) : WorkSessionRepository {
 
-    /*
-     * Starts a new session for a task.
-     *
-     * BUSINESS RULE:
-     * Only one RUNNING session can exist globally.
-     * PAUSED sessions do NOT block a new session.
+    /**
+     * Start or Resume a task
      */
     override suspend fun startSession(
         taskId: Long,
         rateCents: Long
     ): Long {
 
-        val activeSession = workSessionDao.getRunningSession()
+        val runningSession = workSessionDao.getRunningSession()
 
-        /*
-         * Block only if a session is actually RUNNING
-         */
-        if (activeSession?.status == SessionStatus.RUNNING) {
-            throw IllegalStateException(
-                "Another task is already running"
-            )
+        if (runningSession != null) {
+            throw IllegalStateException("Another task is already running")
         }
 
         val now = LocalDateTime.now()
@@ -44,59 +40,97 @@ class WorkSessionRepositoryImpl @Inject constructor(
         val session = WorkSession(
             taskId = taskId,
             startedAt = now,
-            rateCents = rateCents,
-            durationSeconds = 0,
-            earnedCents = 0,
             endedAt = null,
-            status = SessionStatus.RUNNING,
+            durationSeconds = 0,
+            rateCents = rateCents,
+            earnedCents = 0,
             createdAt = now,
             updatedAt = now
         )
 
-        return workSessionDao.insert(session)
+        val sessionId = workSessionDao.insert(session)
+
+        // UPDATE TASK STATUS
+        taskDao.updateStatus(
+            taskId = taskId,
+            status = TaskStatus.RUNNING,
+            updatedAt = now.toString()
+        )
+
+        return sessionId
     }
 
-    /*
-     * Observes the currently active session globally.
-     * (RUNNING or PAUSED depending on DAO implementation)
+    /**
+     * Pause current session
      */
-    override fun observeRunningSession(): Flow<WorkSession?> =
-        workSessionDao.observeRunningSession()
+    override suspend fun pauseSession() {
 
-    /*
-     * Updates session progress or status.
-     */
-    override suspend fun updateSession(
-        sessionId: Long,
-        durationSeconds: Int,
-        earnedCents: Long,
-        status: SessionStatus,
-        endedAt: LocalDateTime?
-    ) {
+        val session = workSessionDao.getRunningSession()
+            ?: throw IllegalStateException("No running session")
 
         val now = LocalDateTime.now()
 
-        workSessionDao.updateSessionState(
-            sessionId = sessionId,
-            durationSeconds = durationSeconds,
-            earnedCents = earnedCents,
-            status = status,
-            endedAt = endedAt,
+        val duration = Duration.between(session.startedAt, now).seconds.toInt()
+
+        val earned = ((duration / 3600.0) * session.rateCents).toLong()
+
+        workSessionDao.closeSession(
+            sessionId = session.id,
+            durationSeconds = duration,
+            earnedCents = earned,
+            endedAt = now,
             updatedAt = now
+        )
+
+        // UPDATE TASK STATUS
+        taskDao.updateStatus(
+            taskId = session.taskId,
+            status = TaskStatus.PAUSED,
+            updatedAt = now.toString()
         )
     }
 
-    /*
-     * Returns the RUNNING session for a specific task.
+    /**
+     * Finish task
      */
+    override suspend fun finishSession() {
+
+        val session = workSessionDao.getRunningSession()
+
+        val now = LocalDateTime.now()
+
+        if (session != null) {
+
+            val duration = Duration.between(session.startedAt, now).seconds.toInt()
+
+            val earned = ((duration / 3600.0) * session.rateCents).toLong()
+
+            workSessionDao.closeSession(
+                sessionId = session.id,
+                durationSeconds = duration,
+                earnedCents = earned,
+                endedAt = now,
+                updatedAt = now
+            )
+
+            // UPDATE TASK STATUS
+            taskDao.updateStatus(
+                taskId = session.taskId,
+                status = TaskStatus.FINISHED,
+                updatedAt = now.toString()
+            )
+
+        }
+    }
+
+    override fun observeRunningSession(): Flow<WorkSession?> =
+        workSessionDao.observeRunningSession()
+
     override suspend fun getRunningSession(
         taskId: Long
     ): WorkSession? =
         workSessionDao.getRunningSessionForTask(taskId)
 
-    /*
-     * Returns all sessions belonging to a task.
-     */
     override suspend fun getSessionsForTask(
         taskId: Long
     ): List<WorkSession> =

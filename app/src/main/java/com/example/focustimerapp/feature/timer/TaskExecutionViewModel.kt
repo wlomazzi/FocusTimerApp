@@ -3,7 +3,6 @@ package com.example.focustimerapp.feature.timer
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.focustimerapp.core.database.entity.SessionStatus
 import com.example.focustimerapp.core.domain.repository.TaskRepository
 import com.example.focustimerapp.core.domain.repository.WorkSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,12 +26,8 @@ class TaskExecutionViewModel @Inject constructor(
 
     private var timerJob: Job? = null
     private var sessionStartTime: LocalDateTime? = null
-    private var currentSessionId: Long? = null
     private var hourlyRateCents: Long = 0L
 
-    /*
-     * Loads task + sessions and restores state.
-     */
     fun loadTask(taskId: Long) {
 
         timerJob?.cancel()
@@ -43,18 +38,17 @@ class TaskExecutionViewModel @Inject constructor(
             val sessions = workSessionRepository.getSessionsForTask(taskId)
 
             val runningSession =
-                sessions.find { it.status == SessionStatus.RUNNING }
+                sessions.find { it.endedAt == null }
 
             val completedSeconds =
                 sessions
-                    .filter { it.status != SessionStatus.RUNNING }
+                    .filter { it.endedAt != null }
                     .sumOf { it.durationSeconds.toLong() }
 
             hourlyRateCents = task?.hourlyRateCents ?: 0L
 
             if (runningSession != null) {
 
-                currentSessionId = runningSession.id
                 sessionStartTime = runningSession.startedAt
 
                 val runningSeconds =
@@ -84,9 +78,6 @@ class TaskExecutionViewModel @Inject constructor(
         }
     }
 
-    /*
-     * Start OR Resume (creates new session).
-     */
     fun startTask() {
 
         val task = uiState.value.task ?: return
@@ -108,7 +99,7 @@ class TaskExecutionViewModel @Inject constructor(
 
             try {
 
-                currentSessionId = workSessionRepository.startSession(
+                workSessionRepository.startSession(
                     taskId = task.id,
                     rateCents = task.hourlyRateCents
                 )
@@ -132,34 +123,17 @@ class TaskExecutionViewModel @Inject constructor(
         }
     }
 
-    /*
-     * Pause = finalize current session.
-     */
     fun pauseTask() {
 
         if (!uiState.value.isRunning) return
 
         timerJob?.cancel()
 
-        val startedAt = sessionStartTime ?: return
-        val now = LocalDateTime.now()
+        viewModelScope.launch {
 
-        val duration =
-            Duration.between(startedAt, now).seconds
+            workSessionRepository.pauseSession()
 
-        currentSessionId?.let { sessionId ->
-            viewModelScope.launch {
-
-                workSessionRepository.updateSession(
-                    sessionId = sessionId,
-                    durationSeconds = duration.toInt(),
-                    earnedCents = calculateEarned(duration),
-                    status = SessionStatus.PAUSED,
-                    endedAt = now
-                )
-
-                loadTask(uiState.value.task!!.id)
-            }
+            loadTask(uiState.value.task!!.id)
         }
 
         uiState.value = uiState.value.copy(
@@ -167,9 +141,6 @@ class TaskExecutionViewModel @Inject constructor(
         )
     }
 
-    /*
-     * Finish = finalize session + mark task completed.
-     */
     fun finishTask() {
 
         if (!uiState.value.isRunning) return
@@ -177,30 +148,16 @@ class TaskExecutionViewModel @Inject constructor(
         timerJob?.cancel()
 
         val task = uiState.value.task ?: return
-        val startedAt = sessionStartTime ?: return
-        val now = LocalDateTime.now()
-
-        val duration =
-            Duration.between(startedAt, now).seconds
 
         viewModelScope.launch {
 
-            currentSessionId?.let { sessionId ->
-                workSessionRepository.updateSession(
-                    sessionId = sessionId,
-                    durationSeconds = duration.toInt(),
-                    earnedCents = calculateEarned(duration),
-                    status = SessionStatus.FINISHED,
-                    endedAt = now
-                )
-            }
+            workSessionRepository.finishSession()
 
             taskRepository.markTaskAsCompleted(task.id)
 
             loadTask(task.id)
         }
 
-        currentSessionId = null
         sessionStartTime = null
 
         uiState.value = uiState.value.copy(
@@ -208,9 +165,6 @@ class TaskExecutionViewModel @Inject constructor(
         )
     }
 
-    /*
-     * Timer updates total seconds and earnings every second.
-     */
     private fun startTimer(completedSeconds: Long) {
 
         timerJob?.cancel()
@@ -238,9 +192,6 @@ class TaskExecutionViewModel @Inject constructor(
         }
     }
 
-    /*
-     * Calculates earnings based on elapsed seconds.
-     */
     private fun calculateEarned(seconds: Long): Long {
 
         val valuePerSecond = hourlyRateCents / 3600.0
