@@ -263,14 +263,17 @@ fun AppNavHost(
             }
         }
 
+        /*
+         * Settings
+         */
         composable(Routes.SETTINGS) {
+
             val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
+
             SettingsScreen(
                 onBackClick = { navController.popBackStack() },
                 isDarkTheme = isDarkTheme,
-                onToggleTheme = {
-                    themeViewModel.toggleTheme()
-                }
+                onToggleTheme = { themeViewModel.toggleTheme() }
             )
         }
     }

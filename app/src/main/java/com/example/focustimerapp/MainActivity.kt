@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
         setContent {
 
             /*
-             Observe theme state
+             Observe theme state from DataStore (via ViewModel)
              */
             val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
 
@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
             ) {
 
                 /*
-                 FIX: Pass ViewModel here
+                 Navigation with access to theme control
                  */
                 AppNavHost(
                     themeViewModel = themeViewModel

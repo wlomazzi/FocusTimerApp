@@ -1,4 +1,4 @@
-package com.example.focustimerapp.ui.theme
+package com.example.focustimerapp.feature.settings
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -9,31 +9,21 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class ThemeViewModel(application: Application) : AndroidViewModel(application) {
+class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
-    /*
-     Reactive theme state from DataStore
-     */
-    val isDarkTheme = getTheme(application.applicationContext)
+    private val context = application.applicationContext
+
+    val isDarkTheme = getTheme(context)
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = false
         )
 
-    /*
-     Toggle and persist theme
-     */
     fun toggleTheme() {
         viewModelScope.launch {
             val current = isDarkTheme.value
-            saveTheme(getApplication<Application>().applicationContext, !current)
-        }
-    }
-
-    fun setDarkTheme(enabled: Boolean) {
-        viewModelScope.launch {
-            saveTheme(getApplication<Application>().applicationContext, enabled)
+            saveTheme(context, !current)
         }
     }
 }
