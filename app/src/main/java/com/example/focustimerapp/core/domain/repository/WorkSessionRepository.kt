@@ -37,4 +37,9 @@ interface WorkSessionRepository {
      * Get all sessions for a task
      */
     suspend fun getSessionsForTask(taskId: Long): List<WorkSession>
+
+    /**
+     * Update an existing session
+     */
+    suspend fun updateSession(session: WorkSession)
 }

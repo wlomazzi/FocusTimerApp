@@ -52,7 +52,7 @@ data class TaskEntity(
     val completedAt: String? = null,
 
     @ColumnInfo(name = "total_seconds")
-    val totalSeconds: Int = 0,
+    val totalSeconds: Long = 0,
 
     @ColumnInfo(name = "total_earned_cents")
     val totalEarnedCents: Long = 0,

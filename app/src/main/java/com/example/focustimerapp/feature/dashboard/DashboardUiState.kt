@@ -19,7 +19,7 @@ import com.example.focustimerapp.core.database.entity.WorkSession
 data class DashboardUiState(
     val tasks: List<Task> = emptyList(),
     val totalEarningsCents: Long = 0,
-    val totalSeconds: Int = 0,
+    val totalSeconds: Long = 0,
     val runningSession: WorkSession? = null,
     val period: PeriodFilter = PeriodFilter.ALL,
     val customStart: LocalDateTime? = null,

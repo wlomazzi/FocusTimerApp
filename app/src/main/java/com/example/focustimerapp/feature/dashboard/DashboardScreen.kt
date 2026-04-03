@@ -218,7 +218,7 @@ private fun PeriodFilterRow(
 @Composable
 private fun SummaryCard(
     totalEarningsCents: Long,
-    totalSeconds: Int
+    totalSeconds: Long
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -521,7 +521,7 @@ private fun formatCurrencyFromCents(cents: Long): String {
     return formatter.format(cents / 100.0)
 }
 
-private fun formatSecondsToHours(seconds: Int): String {
+private fun formatSecondsToHours(seconds: Long): String {
     val hours = seconds / 3600.0
     return String.format(Locale.US, "%.1fh", hours)
 }

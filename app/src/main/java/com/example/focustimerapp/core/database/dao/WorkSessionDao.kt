@@ -55,6 +55,18 @@ interface WorkSessionDao {
     suspend fun getRunningSessionForTask(taskId: Long): WorkSession?
 
     /**
+     * Returns a session by id.
+     */
+    @Query(
+        """
+        SELECT * FROM work_sessions
+        WHERE id = :sessionId
+        LIMIT 1
+        """
+    )
+    suspend fun getSessionById(sessionId: Long): WorkSession?
+
+    /**
      * Closes a session when paused or finished.
      */
     @Query(
@@ -87,13 +99,15 @@ interface WorkSessionDao {
     )
     suspend fun getSessionsForTask(taskId: Long): List<WorkSession>
 
-    @Query("""
-    SELECT 
-        COALESCE(SUM(duration_seconds), 0) as totalSeconds,
-        COALESCE(SUM(earned_cents), 0) as totalEarnedCents
-    FROM work_sessions
-    WHERE task_id = :taskId
-    """)
+    @Query(
+        """
+        SELECT 
+            COALESCE(SUM(duration_seconds), 0) as totalSeconds,
+            COALESCE(SUM(earned_cents), 0) as totalEarnedCents
+        FROM work_sessions
+        WHERE task_id = :taskId
+        """
+    )
     suspend fun getTaskTotals(taskId: Long): TaskTotals
 
     /**

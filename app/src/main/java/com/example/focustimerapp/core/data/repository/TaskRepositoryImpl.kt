@@ -4,6 +4,7 @@ import com.example.focustimerapp.core.data.mapper.toDomain
 import com.example.focustimerapp.core.data.mapper.toEntity
 import com.example.focustimerapp.core.database.dao.TaskDao
 import com.example.focustimerapp.core.database.dao.WorkSessionDao
+import com.example.focustimerapp.core.database.entity.TaskStatus
 import com.example.focustimerapp.core.database.entity.WorkSession
 import com.example.focustimerapp.core.domain.model.Task
 import com.example.focustimerapp.core.domain.repository.TaskRepository
@@ -64,17 +65,40 @@ class TaskRepositoryImpl @Inject constructor(
         taskDao.update(updatedTask)
     }
 
-    /*
-     * NEW: get sessions
+    /**
+     * Return all sessions for one task.
      */
     override suspend fun getSessionsByTaskId(taskId: Long): List<WorkSession> {
         return workSessionDao.getSessionsForTask(taskId)
     }
 
-    /*
-     * NEW: delete session
+    /**
+     * Delete a session and keep the parent task totals consistent.
      */
     override suspend fun deleteSession(sessionId: Long) {
+        val session = workSessionDao.getSessionById(sessionId) ?: return
+        val taskId = session.taskId
+
         workSessionDao.deleteSessionById(sessionId)
+
+        val sessions = workSessionDao.getSessionsForTask(taskId)
+        val hasActive = sessions.any { it.endedAt == null }
+        val hasSessions = sessions.isNotEmpty()
+
+        val newStatus = when {
+            hasActive -> TaskStatus.RUNNING
+            hasSessions -> TaskStatus.FINISHED
+            else -> TaskStatus.PENDING
+        }
+
+        val totals = workSessionDao.getTaskTotals(taskId)
+
+        taskDao.updateTaskAfterSession(
+            taskId = taskId,
+            status = newStatus,
+            totalSeconds = totals.totalSeconds,
+            totalEarnedCents = totals.totalEarnedCents,
+            updatedAt = LocalDateTime.now().toString()
+        )
     }
 }

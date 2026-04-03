@@ -23,13 +23,12 @@ class WorkSessionRepositoryImpl @Inject constructor(
 ) : WorkSessionRepository {
 
     /**
-     * Start or Resume a task
+     * Start or resume a task by creating a new running session.
      */
     override suspend fun startSession(
         taskId: Long,
         rateCents: Long
     ): Long {
-
         val runningSession = workSessionDao.getRunningSession()
 
         if (runningSession != null) {
@@ -51,68 +50,108 @@ class WorkSessionRepositoryImpl @Inject constructor(
 
         val sessionId = workSessionDao.insert(session)
 
-        // Update task after change
         updateTaskAfterSessionChange(taskId)
 
         return sessionId
     }
 
     /**
-     * Pause current session
+     * Pause the current running session.
      */
     override suspend fun pauseSession() {
-
         val session = workSessionDao.getRunningSession()
             ?: throw IllegalStateException("No running session")
 
         val now = LocalDateTime.now()
-
-        val duration = Duration.between(session.startedAt, now).seconds.toInt()
-
-        val earned = ((duration / 3600.0) * session.rateCents).toLong()
-
-        workSessionDao.closeSession(
-            sessionId = session.id,
-            durationSeconds = duration,
-            earnedCents = earned,
-            endedAt = now,
-            updatedAt = now
+        val normalized = normalizeSessionForPersistence(
+            session = session,
+            startedAt = session.startedAt,
+            endedAt = now
         )
 
-        // Update task after change
+        workSessionDao.update(normalized)
         updateTaskAfterSessionChange(session.taskId)
     }
 
     /**
-     * Finish task
+     * Finish the current running session.
      */
     override suspend fun finishSession() {
-
-        val session = workSessionDao.getRunningSession()
+        val session = workSessionDao.getRunningSession() ?: return
 
         val now = LocalDateTime.now()
+        val normalized = normalizeSessionForPersistence(
+            session = session,
+            startedAt = session.startedAt,
+            endedAt = now
+        )
 
-        if (session != null) {
-
-            val duration = Duration.between(session.startedAt, now).seconds.toInt()
-
-            val earned = ((duration / 3600.0) * session.rateCents).toLong()
-
-            workSessionDao.closeSession(
-                sessionId = session.id,
-                durationSeconds = duration,
-                earnedCents = earned,
-                endedAt = now,
-                updatedAt = now
-            )
-
-            // Update task after change
-            updateTaskAfterSessionChange(session.taskId)
-        }
+        workSessionDao.update(normalized)
+        updateTaskAfterSessionChange(session.taskId)
     }
 
     /**
-     * Central rule: update BOTH status and totals
+     * Update an existing session.
+     *
+     * Important:
+     * When a session timestamp changes, duration and earned values must also be recalculated
+     * before updating task totals.
+     */
+    override suspend fun updateSession(session: WorkSession) {
+        val normalized = normalizeSessionForPersistence(
+            session = session,
+            startedAt = session.startedAt,
+            endedAt = session.endedAt
+        )
+
+        workSessionDao.update(normalized)
+        updateTaskAfterSessionChange(session.taskId)
+    }
+
+    /**
+     * Recalculate session-derived fields before persistence.
+     *
+     * Rules:
+     * - Running session: duration = 0, earned = 0
+     * - Closed session: duration and earned are recalculated from timestamps
+     * - Negative duration is blocked
+     */
+    private fun normalizeSessionForPersistence(
+        session: WorkSession,
+        startedAt: LocalDateTime,
+        endedAt: LocalDateTime?
+    ): WorkSession {
+        val now = LocalDateTime.now()
+
+        if (endedAt == null) {
+            return session.copy(
+                startedAt = startedAt,
+                endedAt = null,
+                durationSeconds = 0,
+                earnedCents = 0,
+                updatedAt = now
+            )
+        }
+
+        require(!endedAt.isBefore(startedAt)) {
+            "Session end time cannot be before start time"
+        }
+
+        val durationSeconds = Duration.between(startedAt, endedAt).seconds.toInt()
+        val earnedCents = ((durationSeconds / 3600.0) * session.rateCents).toLong()
+
+        return session.copy(
+            startedAt = startedAt,
+            endedAt = endedAt,
+            durationSeconds = durationSeconds,
+            earnedCents = earnedCents,
+            updatedAt = now
+        )
+    }
+
+    /**
+     * Central rule:
+     * After any session change, recalculate task status and persisted totals.
      */
     private suspend fun updateTaskAfterSessionChange(taskId: Long) {
         val now = LocalDateTime.now()
@@ -128,7 +167,6 @@ class WorkSessionRepositoryImpl @Inject constructor(
             else -> TaskStatus.PENDING
         }
 
-        // Get totals from DB
         val totals = workSessionDao.getTaskTotals(taskId)
 
         taskDao.updateTaskAfterSession(
@@ -143,13 +181,9 @@ class WorkSessionRepositoryImpl @Inject constructor(
     override fun observeRunningSession(): Flow<WorkSession?> =
         workSessionDao.observeRunningSession()
 
-    override suspend fun getRunningSession(
-        taskId: Long
-    ): WorkSession? =
+    override suspend fun getRunningSession(taskId: Long): WorkSession? =
         workSessionDao.getRunningSessionForTask(taskId)
 
-    override suspend fun getSessionsForTask(
-        taskId: Long
-    ): List<WorkSession> =
+    override suspend fun getSessionsForTask(taskId: Long): List<WorkSession> =
         workSessionDao.getSessionsForTask(taskId)
 }

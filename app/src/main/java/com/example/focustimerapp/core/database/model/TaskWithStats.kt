@@ -10,5 +10,5 @@ data class TaskWithStats(
 
     val totalEarnedCents: Long,
 
-    val totalSeconds: Int
+    val totalSeconds: Long
 )

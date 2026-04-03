@@ -10,7 +10,7 @@ import com.example.focustimerapp.core.domain.model.Task
  */
 fun TaskEntity.toDomain(
     totalEarnedCents: Long = 0,
-    totalSeconds: Int = 0
+    totalSeconds: Long = 0
 ): Task {
 
     return Task(

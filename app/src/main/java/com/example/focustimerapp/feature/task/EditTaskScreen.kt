@@ -1,6 +1,9 @@
 package com.example.focustimerapp.feature.task
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -17,9 +21,9 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,7 +31,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -41,8 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.focustimerapp.core.database.entity.WorkSession
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -55,24 +56,19 @@ fun EditTaskScreen(
     taskId: Long,
     onBackClick: () -> Unit,
     onSaveClick: () -> Unit,
-    viewModel: EditTaskViewModel = hiltViewModel()
+    viewModel: EditTaskViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     val taskState by viewModel.task.collectAsState()
     val clients by viewModel.clients.collectAsState(initial = emptyList())
-    val sessions by viewModel.sessions.collectAsState(initial = emptyList<WorkSession>())
+    val sessions by viewModel.editableSessions.collectAsState(initial = emptyList())
 
-    /*
-     * Loads task data when the screen is opened.
-     */
+
     LaunchedEffect(taskId) {
         viewModel.loadTask(taskId)
     }
 
     val task = taskState
 
-    /*
-     * Initializes form state based on the loaded task.
-     */
     var description by remember(task?.id) {
         mutableStateOf(task?.description ?: "")
     }
@@ -108,9 +104,6 @@ fun EditTaskScreen(
         SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     }
 
-    /*
-     * Opens the native Android date picker.
-     */
     fun openDatePicker() {
         DatePickerDialog(
             context,
@@ -159,9 +152,6 @@ fun EditTaskScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            /*
-             * Task description field.
-             */
             Text("Task Description *")
 
             OutlinedTextField(
@@ -171,47 +161,36 @@ fun EditTaskScreen(
                 shape = MaterialTheme.shapes.small
             )
 
-            /*
-             * Client selection field.
-             */
             Text("Assign to Client *")
+            var expanded by remember { mutableStateOf(false) }
 
-            ExposedDropdownMenuBox(
+            OutlinedTextField(
+                value = selectedClientName,
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth(),
+                trailingIcon = {
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = null)
+                    }
+                }
+            )
+
+            DropdownMenu(
                 expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
+                onDismissRequest = { expanded = false }
             ) {
-                OutlinedTextField(
-                    value = selectedClientName,
-                    onValueChange = {},
-                    readOnly = true,
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth(),
-                    shape = MaterialTheme.shapes.small,
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                    }
-                )
-
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    clients.forEach { client ->
-                        DropdownMenuItem(
-                            text = { Text(client.name) },
-                            onClick = {
-                                selectedClientId = client.id
-                                expanded = false
-                            }
-                        )
-                    }
+                clients.forEach { client ->
+                    DropdownMenuItem(
+                        text = { Text(client.name) },
+                        onClick = {
+                            selectedClientId = client.id
+                            expanded = false
+                        }
+                    )
                 }
             }
 
-            /*
-             * Hourly rate field.
-             */
             Text("Hourly Rate ($) *")
 
             OutlinedTextField(
@@ -221,9 +200,6 @@ fun EditTaskScreen(
                 shape = MaterialTheme.shapes.small
             )
 
-            /*
-             * Scheduled start date field.
-             */
             Text("Scheduled Start Date *")
 
             OutlinedTextField(
@@ -242,9 +218,6 @@ fun EditTaskScreen(
                 readOnly = true
             )
 
-            /*
-             * Completion details section.
-             */
             if (sessions.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -252,21 +225,24 @@ fun EditTaskScreen(
                     text = "Completion Details",
                     style = MaterialTheme.typography.titleMedium
                 )
-
                 sessions.forEachIndexed { index, session ->
-                    SessionCard(
-                        index = index,
+                    EditableSessionCard(
+                        index = index + 1,
                         session = session,
+                        hourlyRateCents = task?.hourlyRateCents ?: 0L,
                         onDeleteClick = {
                             viewModel.deleteSession(session.id)
+                        },
+                        onStartChange = {
+                            viewModel.updateSessionStart(session.id, it)
+                        },
+                        onEndChange = {
+                            viewModel.updateSessionEnd(session.id, it)
                         }
                     )
                 }
             }
 
-            /*
-             * Save button updates the task.
-             */
             Button(
                 onClick = {
                     task?.let { originalTask ->
@@ -284,6 +260,7 @@ fun EditTaskScreen(
                         )
 
                         viewModel.updateTask(updatedTask)
+                        viewModel.saveSessionEdits()
                         onSaveClick()
                     }
                 },
@@ -299,72 +276,225 @@ fun EditTaskScreen(
 }
 
 @Composable
-private fun SessionCard(
+private fun EditableSessionCard(
     index: Int,
-    session: WorkSession,
-    onDeleteClick: () -> Unit
+    session: EditTaskViewModel.EditableSession,
+    hourlyRateCents: Long,
+    onDeleteClick: () -> Unit,
+    onStartChange: (LocalDateTime) -> Unit,
+    onEndChange: (LocalDateTime) -> Unit
 ) {
+    val context = LocalContext.current
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Session #${index + 1}",
-                    style = MaterialTheme.typography.titleSmall,
+                    text = "Session #$index",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
 
-                Text(
-                    text = formatDuration(session.durationSeconds),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                IconButton(onClick = onDeleteClick) {
+                IconButton(
+                    onClick = { showDeleteDialog = true }
+                ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete session"
+                        contentDescription = "Delete session",
+                        tint = MaterialTheme.colorScheme.error
                     )
                 }
             }
 
-            OutlinedTextField(
-                value = formatDateTime(session.startedAt),
-                onValueChange = {},
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Start Time") },
-                readOnly = true,
-                shape = MaterialTheme.shapes.small
+            Spacer(modifier = Modifier.height(8.dp))
+/*
+            Text(
+                text = "Duration: ${formatSessionTime(session.original.durationSeconds.toLong())}",
+                color = MaterialTheme.colorScheme.onSurface
             )
 
-            OutlinedTextField(
-                value = formatDateTime(session.endedAt),
-                onValueChange = {},
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("End Time") },
-                readOnly = true,
-                shape = MaterialTheme.shapes.small
+            Text(
+                text = "Earned: ${formatSessionCurrency(session.original.earnedCents)}",
+                color = MaterialTheme.colorScheme.onSurface
             )
+*/
+
+            val durationSeconds = remember(session.startedAt, session.endedAt) {
+                val end = session.endedAt ?: return@remember 0L
+                java.time.Duration.between(session.startedAt, end).seconds
+            }
+
+            val earnedCents: Long = remember(durationSeconds, hourlyRateCents) {
+                (durationSeconds * hourlyRateCents) / 3600
+            }
+
+            Text(
+                text = "Duration: ${formatSessionTime(durationSeconds)}",
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Text(
+                text = "Earned: ${formatSessionCurrency(earnedCents)}",
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = formatSessionDateTime(session.startedAt),
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Start Time") },
+                trailingIcon = {
+                    IconButton(
+                        onClick = {
+                            val current = session.startedAt
+
+                            DatePickerDialog(
+                                context,
+                                { _, year, month, dayOfMonth ->
+                                    TimePickerDialog(
+                                        context,
+                                        { _, hour, minute ->
+                                            onStartChange(
+                                                LocalDateTime.of(
+                                                    year,
+                                                    month + 1,
+                                                    dayOfMonth,
+                                                    hour,
+                                                    minute
+                                                )
+                                            )
+                                        },
+                                        current.hour,
+                                        current.minute,
+                                        true
+                                    ).show()
+                                },
+                                current.year,
+                                current.monthValue - 1,
+                                current.dayOfMonth
+                            ).show()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Edit start time"
+                        )
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            session.endedAt?.let { end ->
+                OutlinedTextField(
+                    value = formatSessionDateTime(end),
+                    onValueChange = {},
+                    readOnly = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("End Time") },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                DatePickerDialog(
+                                    context,
+                                    { _, year, month, dayOfMonth ->
+                                        TimePickerDialog(
+                                            context,
+                                            { _, hour, minute ->
+                                                onEndChange(
+                                                    LocalDateTime.of(
+                                                        year,
+                                                        month + 1,
+                                                        dayOfMonth,
+                                                        hour,
+                                                        minute
+                                                    )
+                                                )
+                                            },
+                                            end.hour,
+                                            end.minute,
+                                            true
+                                        ).show()
+                                    },
+                                    end.year,
+                                    end.monthValue - 1,
+                                    end.dayOfMonth
+                                ).show()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = "Edit end time"
+                            )
+                        }
+                    }
+                )
+            }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = {
+                Text("Delete session")
+            },
+            text = {
+                Text("Are you sure you want to delete this session?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDeleteClick()
+                    }
+                ) {
+                    Text(
+                        "Delete",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
-private fun formatDuration(totalSeconds: Int): String {
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return "${minutes}m ${seconds}s"
+
+
+private fun formatSessionTime(seconds: Long): String {
+    val hours = seconds / 3600
+    val minutes = (seconds % 3600) / 60
+    val secs = seconds % 60
+    return "%02d:%02d:%02d".format(hours, minutes, secs)
 }
 
-private fun formatDateTime(value: LocalDateTime?): String {
+private fun formatSessionCurrency(cents: Long): String {
+    return "$" + "%.2f".format(cents / 100.0)
+}
+
+private fun formatSessionDateTime(value: LocalDateTime?): String {
     if (value == null) return ""
 
     return try {

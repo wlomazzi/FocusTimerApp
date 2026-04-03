@@ -28,7 +28,7 @@ data class Task(
     val completedAt: String? = null,
 
     /** Total tracked duration in seconds (aggregated from work sessions). */
-    val totalSeconds: Int = 0,
+    val totalSeconds: Long = 0,
 
     /** Total earned amount in cents (aggregated from work sessions). */
     val totalEarnedCents: Long = 0,
