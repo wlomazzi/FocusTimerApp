@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Work
@@ -27,6 +28,9 @@ import com.example.focustimerapp.core.domain.model.PeriodFilter
 import com.example.focustimerapp.core.domain.model.Task
 import com.example.focustimerapp.feature.timer.RunningTimerCard
 import java.text.NumberFormat
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,8 +47,17 @@ fun DashboardScreen(
     var showArchived by remember { mutableStateOf(false) }
 
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+
     val runningSession = uiState.runningSession
 
+    var showDatePicker by remember { mutableStateOf(false) }
+    var selectedStartDate by remember { mutableStateOf<LocalDate?>(null) }
+    var selectedEndDate by remember { mutableStateOf<LocalDate?>(null) }
+    var isCustomDateSelected by remember { mutableStateOf(false) }
+
+    if (uiState.period != PeriodFilter.ALL && isCustomDateSelected) {
+        isCustomDateSelected = false
+    }
     /*
      * Split tasks by archive state.
      * Archived tasks are displayed in their own section.
@@ -87,13 +100,101 @@ fun DashboardScreen(
                     totalSeconds = uiState.totalSeconds
                 )
             }
-
             item {
-                PeriodFilterRow(
-                    selected = uiState.period,
-                    onFilterSelected = viewModel::setPeriod
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    PeriodFilterRow(
+                        selected = uiState.period,
+                        onFilterSelected = viewModel::setPeriod
+                    )
+                    IconButton(
+                        onClick = { showDatePicker = true }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Select date range"
+                        )
+                    }
+                }
+
+
+                if (showDatePicker) {
+
+                    val dateRangePickerState = rememberDateRangePickerState()
+
+                    DatePickerDialog(
+                        onDismissRequest = { showDatePicker = false },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+
+                                    val startMillis = dateRangePickerState.selectedStartDateMillis
+                                    val endMillis = dateRangePickerState.selectedEndDateMillis
+
+                                    if (startMillis != null && endMillis != null) {
+
+                                        val start = Instant.ofEpochMilli(startMillis)
+                                            .atZone(ZoneId.systemDefault())
+                                            .toLocalDate()
+
+                                        val end = Instant.ofEpochMilli(endMillis)
+                                            .atZone(ZoneId.systemDefault())
+                                            .toLocalDate()
+
+                                        if (!end.isBefore(start)) {
+                                            selectedStartDate = start
+                                            selectedEndDate = end
+                                            viewModel.setCustomRange(start, end)
+                                            isCustomDateSelected = true
+                                        }
+                                    }
+                                    showDatePicker = false
+                                }
+                            ) {
+                                Text("OK")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = { showDatePicker = false }
+                            ) {
+                                Text("Cancel")
+                            }
+                        }
+                    ) {
+                        DateRangePicker(
+                            state = dateRangePickerState
+                        )
+                    }
+                }
+                if (
+                    selectedStartDate != null &&
+                    selectedEndDate != null &&
+                    isCustomDateSelected
+                ) {
+                    Surface(
+                        shape = MaterialTheme.shapes.large,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        tonalElevation = 2.dp,
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "$selectedStartDate - $selectedEndDate",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
             }
+
+
 
             item {
                 Row(
@@ -261,9 +362,7 @@ private fun PeriodFilterRow(
 ) {
 
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-
         PeriodFilter.entries.forEach { filter ->
-
             FilterChip(
                 selected = selected == filter,
                 onClick = { onFilterSelected(filter) },

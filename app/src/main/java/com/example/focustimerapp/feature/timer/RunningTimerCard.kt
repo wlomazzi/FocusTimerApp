@@ -21,7 +21,7 @@ fun RunningTimerCard(
 
     /*
      Determine current session state
-     */
+    */
     //val isRunning = session.status == SessionStatus.RUNNING
     val isRunning = session.endedAt == null
 
@@ -39,7 +39,7 @@ fun RunningTimerCard(
 
     /*
      Adjust card color based on session state
-     */
+    */
     val cardColor =
         if (isRunning)
             MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)

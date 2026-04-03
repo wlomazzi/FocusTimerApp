@@ -18,8 +18,11 @@ class TaskRepositoryImpl @Inject constructor(
     private val workSessionDao: WorkSessionDao
 ) : TaskRepository {
 
-    override fun observeAllTasks(): Flow<List<Task>> =
-        taskDao.observeTasksWithStats()
+    override fun observeAllTasks(
+        startDateTime: String?,
+        endDateTime: String?
+    ): Flow<List<Task>> =
+        taskDao.observeTasksWithStats(startDateTime, endDateTime)
             .map { statsList ->
                 statsList.map { stats ->
                     stats.task.toDomain(
@@ -30,11 +33,11 @@ class TaskRepositoryImpl @Inject constructor(
             }
 
     override fun observeActiveTasks(): Flow<List<Task>> =
-        observeAllTasks()
+        observeAllTasks(null, null)
             .map { tasks -> tasks.filter { !it.isCompleted } }
 
     override fun observeCompletedTasks(): Flow<List<Task>> =
-        observeAllTasks()
+        observeAllTasks(null, null)
             .map { tasks -> tasks.filter { it.isCompleted } }
 
     override suspend fun getTaskById(taskId: Long): Task? =
@@ -65,16 +68,10 @@ class TaskRepositoryImpl @Inject constructor(
         taskDao.update(updatedTask)
     }
 
-    /**
-     * Return all sessions for one task.
-     */
     override suspend fun getSessionsByTaskId(taskId: Long): List<WorkSession> {
         return workSessionDao.getSessionsForTask(taskId)
     }
 
-    /**
-     * Delete a session and keep the parent task totals consistent.
-     */
     override suspend fun deleteSession(sessionId: Long) {
         val session = workSessionDao.getSessionById(sessionId) ?: return
         val taskId = session.taskId

@@ -36,15 +36,9 @@ data class TaskEntity(
     @ColumnInfo(name = "scheduled_start_date")
     val scheduledStartDate: String?,
 
-    /**
-     * NEW FIELD → source of truth
-     */
     @ColumnInfo(name = "status")
     val status: TaskStatus = TaskStatus.PENDING,
 
-    /**
-     * OLD FIELD (temporary - will be removed later)
-     */
     @ColumnInfo(name = "is_completed")
     val isCompleted: Boolean = false,
 

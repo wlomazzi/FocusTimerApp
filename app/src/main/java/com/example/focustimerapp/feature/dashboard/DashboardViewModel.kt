@@ -2,41 +2,45 @@ package com.example.focustimerapp.feature.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.focustimerapp.core.database.entity.WorkSession
 import com.example.focustimerapp.core.domain.model.PeriodFilter
-import com.example.focustimerapp.core.domain.model.Task
 import com.example.focustimerapp.core.domain.repository.WorkSessionRepository
 import com.example.focustimerapp.core.domain.usecase.ObserveAllTasksUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
-import java.time.LocalDateTime
+import java.time.LocalDate
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    observeAllTasksUseCase: ObserveAllTasksUseCase,
-    workSessionRepository: WorkSessionRepository
+    private val observeAllTasksUseCase: ObserveAllTasksUseCase,
+    private val workSessionRepository: WorkSessionRepository
 ) : ViewModel() {
 
-    /*
-     * Flow containing all tasks from repository
-     */
-    private val tasksFlow = observeAllTasksUseCase()
-
-    /*
-     * Flow observing the currently running session
-     */
     private val runningSessionFlow =
         workSessionRepository.observeRunningSession()
 
-    /*
-     * Period filter selected in the UI
-     */
     private val periodFilter =
         MutableStateFlow(PeriodFilter.ALL)
 
+    private val _customRange =
+        MutableStateFlow<Pair<LocalDate?, LocalDate?>>(null to null)
+
     /*
-     * Public UI state
+     * Core flow
+     */
+    private val tasksFlow =
+        combine(periodFilter, _customRange) { period, range ->
+            buildDateRange(period, range)
+        }
+            .flatMapLatest { (start, end) ->
+                //println("FILTER DEBUG -> start: $start | end: $end")
+                observeAllTasksUseCase(start, end)
+            }
+
+    /*
+     * UI state
      */
     val uiState: StateFlow<DashboardUiState> =
         combine(
@@ -45,23 +49,9 @@ class DashboardViewModel @Inject constructor(
             periodFilter
         ) { tasks, runningSession, period ->
 
-            /*
-             * Separate archived tasks first
-             */
             val archivedTasks = tasks.filter { it.isArchived }
+            val activeTasks = tasks.filter { !it.isArchived }
 
-            /*
-             * Apply period filter ONLY to active tasks
-             */
-            val activeTasks =
-                filterTasksByPeriod(
-                    tasks.filter { !it.isArchived },
-                    period
-                )
-
-            /*
-             * Merge lists ensuring no duplicates
-             */
             val finalTasks =
                 (activeTasks + archivedTasks)
                     .distinctBy { it.id }
@@ -87,53 +77,60 @@ class DashboardViewModel @Inject constructor(
             )
 
     /*
-     * Update selected period
+     * Set period
      */
     fun setPeriod(period: PeriodFilter) {
         periodFilter.value = period
+        _customRange.value = null to null
     }
 
     /*
-     * Filter tasks by period (ONLY active tasks should reach here)
+     * Set custom range
      */
-    private fun filterTasksByPeriod(
-        tasks: List<Task>,
-        period: PeriodFilter
-    ): List<Task> {
+    fun setCustomRange(start: LocalDate?, end: LocalDate?) {
+        _customRange.value = start to end
+    }
 
-        if (period == PeriodFilter.ALL) {
-            return tasks
+    /*
+     * Build date range (DATE only)
+     */
+    private fun buildDateRange(
+        period: PeriodFilter,
+        range: Pair<LocalDate?, LocalDate?>
+    ): Pair<String?, String?> {
+
+        val (start, end) = range
+
+        // Custom range
+        if (start != null && end != null) {
+            return start.toDbDate() to end.toDbDate()
         }
 
-        val now = LocalDateTime.now()
+        val today = LocalDate.now()
 
-        val startDate = when (period) {
+        return when (period) {
 
-            PeriodFilter.TODAY ->
-                now.toLocalDate().atStartOfDay()
+            PeriodFilter.TODAY -> {
+                today.toDbDate() to today.toDbDate()
+            }
 
-            PeriodFilter.WEEK ->
-                now.minusDays(7)
+            PeriodFilter.WEEK -> {
+                today.minusDays(7).toDbDate() to today.toDbDate()
+            }
 
-            PeriodFilter.MONTH ->
-                now.minusMonths(1)
+            PeriodFilter.MONTH -> {
+                today.minusMonths(1).toDbDate() to today.toDbDate()
+            }
 
-            PeriodFilter.ALL ->
-                return tasks
-        }
-
-        return tasks.filter { task ->
-
-            val completedAt =
-                task.completedAt ?: return@filter false
-
-            val completedDate =
-                runCatching {
-                    LocalDateTime.parse(completedAt)
-                }.getOrNull()
-                    ?: return@filter false
-
-            completedDate.isAfter(startDate)
+            PeriodFilter.ALL -> {
+                null to null
+            }
         }
     }
+
+    /*
+     * Format helper (DATE only)
+     */
+    private fun LocalDate.toDbDate(): String =
+        this.toString()
 }

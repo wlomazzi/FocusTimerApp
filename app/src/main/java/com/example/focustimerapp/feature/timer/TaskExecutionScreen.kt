@@ -33,12 +33,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.focustimerapp.core.database.entity.WorkSession
 import java.util.concurrent.TimeUnit
+import androidx.compose.material3.Surface
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,7 +131,6 @@ fun TaskExecutionScreen(
 /* --------------------------------------------------- */
 /* ------------------ TIMER CONTENT ------------------ */
 /* --------------------------------------------------- */
-
 @Composable
 private fun TimerContent(
     state: TaskExecutionUiState,
@@ -141,24 +143,46 @@ private fun TimerContent(
 
         Text(
             text = formatTime(state.totalSeconds),
-            style = MaterialTheme.typography.displayLarge,
+            style = MaterialTheme.typography.displayLarge.copy(
+                shadow = Shadow(
+                    color = Color.Black.copy(alpha = 0.7f),
+                    offset = Offset(4f, 4f),
+                    blurRadius = 10f
+                )
+            ),
             color = Color.White
         )
 
         Spacer(modifier = Modifier.height(24.dp))
-
         EarningsCard(state.earnedCents)
-
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
             text = "Hourly Rate: ${formatCurrency(hourlyRateCents)}/h",
             color = Color.White.copy(alpha = 0.8f)
         )
-
         state.errorMessage?.let {
             Spacer(modifier = Modifier.height(12.dp))
-            Text(text = it, color = Color.Red)
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White.copy(alpha = 0.15f) // igual ao card
+            ) {
+                Text(
+                    text = it,
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        shadow = Shadow(
+                            color = Color.Black.copy(alpha = 0.7f),
+                            offset = Offset(2f, 2f),
+                            blurRadius = 4f
+                        )
+                    ),
+                    modifier = Modifier.padding(
+                        horizontal = 16.dp,
+                        vertical = 10.dp
+                    )
+                )
+            }
         }
     }
 }
@@ -166,7 +190,6 @@ private fun TimerContent(
 /* --------------------------------------------------- */
 /* ------------------ EARNINGS CARD ------------------ */
 /* --------------------------------------------------- */
-
 @Composable
 private fun EarningsCard(earnedCents: Long) {
 
@@ -202,7 +225,6 @@ private fun EarningsCard(earnedCents: Long) {
 /* --------------------------------------------------- */
 /* ------------------ TIMER CONTROLS ----------------- */
 /* --------------------------------------------------- */
-
 @Composable
 private fun TimerControls(
     state: TaskExecutionUiState,
@@ -267,7 +289,6 @@ private fun TimerControls(
 /* --------------------------------------------------- */
 /* ------------------ SESSION CARD ------------------- */
 /* --------------------------------------------------- */
-
 @Composable
 private fun SessionCard(
     index: Int,
@@ -324,7 +345,6 @@ private fun SessionCard(
 /* --------------------------------------------------- */
 /* ------------------ UTILITIES ---------------------- */
 /* --------------------------------------------------- */
-
 private fun timerGradient(): Brush =
     Brush.verticalGradient(
         listOf(

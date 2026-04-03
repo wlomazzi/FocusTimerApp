@@ -5,5 +5,8 @@ import com.example.focustimerapp.core.domain.repository.TaskRepository
 class ObserveAllTasksUseCase(
     private val repository: TaskRepository
 ) {
-    operator fun invoke() = repository.observeAllTasks()
+    operator fun invoke(
+        startDateTime: String?,
+        endDateTime: String?
+    ) = repository.observeAllTasks(startDateTime, endDateTime)
 }

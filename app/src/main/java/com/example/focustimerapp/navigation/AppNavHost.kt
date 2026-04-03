@@ -32,9 +32,7 @@ object Routes {
     const val CLIENTS = "clients"
     const val ADD_CLIENT = "clients/add"
     const val EDIT_CLIENT = "clients/edit/{clientId}"
-
     const val SETTINGS = "settings"
-
     fun editTask(taskId: Long) = "edit_task/$taskId"
     fun taskExecution(taskId: Long) = "task_execution/$taskId"
     fun taskDetail(taskId: Long) = "task_detail/$taskId"
@@ -49,17 +47,14 @@ object Routes {
 fun AppNavHost(
     themeViewModel: ThemeViewModel
 ) {
-
     val navController = rememberNavController()
-
     NavHost(
         navController = navController,
         startDestination = Routes.DASHBOARD
     ) {
-
         /*
-         * Dashboard
-         */
+        * Dashboard
+        */
         composable(Routes.DASHBOARD) {
             DashboardScreen(
                 onAddTaskClick = {
@@ -84,8 +79,8 @@ fun AppNavHost(
         }
 
         /*
-         * Create Task
-         */
+        * Create Task
+        */
         composable(Routes.CREATE_TASK) {
             CreateTaskScreen(
                 onBackClick = { navController.popBackStack() },
@@ -98,8 +93,8 @@ fun AppNavHost(
         }
 
         /*
-         * Edit Task
-         */
+        * Edit Task
+        */
         composable(
             route = Routes.EDIT_TASK,
             arguments = listOf(
@@ -119,21 +114,17 @@ fun AppNavHost(
         }
 
         /*
-         * Task Execution
-         */
+        * Task Execution
+        */
         composable(
             route = Routes.TASK_EXECUTION,
             arguments = listOf(
                 navArgument("taskId") { type = NavType.LongType }
             )
         ) { backStackEntry ->
-
-            val taskId =
-                backStackEntry.arguments?.getLong("taskId")
+            val taskId = backStackEntry.arguments?.getLong("taskId")
                     ?: return@composable
-
             val viewModel: TaskExecutionViewModel = hiltViewModel()
-
             TaskExecutionScreen(
                 taskId = taskId,
                 viewModel = viewModel,
@@ -142,26 +133,24 @@ fun AppNavHost(
         }
 
         /*
-         * Task Detail
-         */
+        * Task Detail
+        */
         composable(
             route = Routes.TASK_DETAIL,
             arguments = listOf(
                 navArgument("taskId") { type = NavType.LongType }
             )
         ) { backStackEntry ->
-
             backStackEntry.arguments?.getLong("taskId")
                 ?: return@composable
-
             TaskDetailScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }
 
         /*
-         * Clients
-         */
+        * Clients
+        */
         composable(Routes.CLIENTS) {
             ClientScreen(
                 onBackClick = { navController.popBackStack() },
@@ -175,20 +164,17 @@ fun AppNavHost(
         }
 
         /*
-         * Add Client
-         */
+        * Add Client
+        */
         composable(Routes.ADD_CLIENT) {
-
             val viewModel: ClientListViewModel = hiltViewModel()
             val state = viewModel.formState.collectAsState().value
             val snackbarHostState = remember { SnackbarHostState() }
             val coroutineScope = rememberCoroutineScope()
-
             Scaffold(
                 topBar = { TopAppBar(title = { Text("Add Client") }) },
                 snackbarHost = { SnackbarHost(snackbarHostState) }
             ) { paddingValues ->
-
                 ClientFormContent(
                     modifier = Modifier.padding(paddingValues),
                     state = state,
@@ -197,14 +183,12 @@ fun AppNavHost(
                     onCompanyChange = viewModel::updateCompany,
                     onSaveClick = { viewModel.saveClient() }
                 )
-
                 state.errorMessage?.let { message ->
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(message)
                         viewModel.clearError()
                     }
                 }
-
                 if (state.isSuccess) {
                     viewModel.clearSuccess()
                     navController.popBackStack()
@@ -213,33 +197,28 @@ fun AppNavHost(
         }
 
         /*
-         * Edit Client
-         */
+        * Edit Client
+        */
         composable(
             route = Routes.EDIT_CLIENT,
             arguments = listOf(
                 navArgument("clientId") { type = NavType.LongType }
             )
         ) { backStackEntry ->
-
             val clientId =
                 backStackEntry.arguments?.getLong("clientId")
                     ?: return@composable
-
             val viewModel: ClientListViewModel = hiltViewModel()
             val state = viewModel.formState.collectAsState().value
             val snackbarHostState = remember { SnackbarHostState() }
             val coroutineScope = rememberCoroutineScope()
-
             LaunchedEffect(clientId) {
                 viewModel.loadClient(clientId)
             }
-
             Scaffold(
                 topBar = { TopAppBar(title = { Text("Edit Client") }) },
                 snackbarHost = { SnackbarHost(snackbarHostState) }
             ) { paddingValues ->
-
                 ClientFormContent(
                     modifier = Modifier.padding(paddingValues),
                     state = state,
@@ -248,14 +227,12 @@ fun AppNavHost(
                     onCompanyChange = viewModel::updateCompany,
                     onSaveClick = { viewModel.saveClient() }
                 )
-
                 state.errorMessage?.let { message ->
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(message)
                         viewModel.clearError()
                     }
                 }
-
                 if (state.isSuccess) {
                     viewModel.clearSuccess()
                     navController.popBackStack()
@@ -264,12 +241,10 @@ fun AppNavHost(
         }
 
         /*
-         * Settings
-         */
+        * Settings
+        */
         composable(Routes.SETTINGS) {
-
             val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
-
             SettingsScreen(
                 onBackClick = { navController.popBackStack() },
                 isDarkTheme = isDarkTheme,

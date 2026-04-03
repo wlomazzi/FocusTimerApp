@@ -44,7 +44,6 @@ object DatabaseModule {
         return database.taskDao()
     }
 
-
     @Provides
     @Singleton
     fun provideWorkSessionDao(

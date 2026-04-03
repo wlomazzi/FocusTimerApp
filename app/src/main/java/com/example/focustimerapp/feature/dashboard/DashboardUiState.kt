@@ -26,15 +26,4 @@ data class DashboardUiState(
     val customEnd: LocalDateTime? = null
 ){
 
-    /**
-     * Indicates if the dashboard is using a custom range filter.
-     */
-    /*
-    val isCustomRange: Boolean
-
-        get() = period == PeriodFilter.CUSTOM &&
-                customStart != null &&
-                customEnd != null
-
-         */
 }

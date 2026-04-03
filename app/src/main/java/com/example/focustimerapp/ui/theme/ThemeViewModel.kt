@@ -12,8 +12,8 @@ import kotlinx.coroutines.launch
 class ThemeViewModel(application: Application) : AndroidViewModel(application) {
 
     /*
-     Reactive theme state from DataStore
-     */
+    * Reactive theme state from DataStore
+    */
     val isDarkTheme = getTheme(application.applicationContext)
         .stateIn(
             scope = viewModelScope,
@@ -22,8 +22,8 @@ class ThemeViewModel(application: Application) : AndroidViewModel(application) {
         )
 
     /*
-     Toggle and persist theme
-     */
+    * Toggle and persist theme
+    */
     fun toggleTheme() {
         viewModelScope.launch {
             val current = isDarkTheme.value

@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.Flow
 interface TaskDao {
 
     /*
-     * Returns ALL tasks with aggregated stats.
-     * Archived tasks are included.
+     * Returns all tasks with aggregated stats.
+     * Filters by scheduled_start_date when provided.
      */
     @Query("""
     SELECT 
@@ -21,14 +21,20 @@ interface TaskDao {
     FROM tasks t
     LEFT JOIN work_sessions ws
         ON ws.task_id = t.id
+    WHERE 
+        (:startDate IS NULL OR date(t.scheduled_start_date) >= date(:startDate))
+        AND (:endDate IS NULL OR date(t.scheduled_start_date) <= date(:endDate))
     GROUP BY t.id
-    ORDER BY t.created_at DESC
+    ORDER BY t.scheduled_start_date 
     """)
-    fun observeTasksWithStats(): Flow<List<TaskWithStats>>
+    fun observeTasksWithStats(
+        startDate: String?,
+        endDate: String?
+    ): Flow<List<TaskWithStats>>
 
 
     /*
-     * Update totals and status after session changes
+     * Updates task totals and status after session changes.
      */
     @Query("""
     UPDATE tasks
@@ -48,36 +54,39 @@ interface TaskDao {
 
 
     /*
-     * Returns ALL tasks (including archived)
+     * Returns all tasks ordered by creation date.
      */
-    @Query("SELECT * FROM tasks ORDER BY created_at DESC")
+    @Query("""
+        SELECT * FROM tasks 
+        ORDER BY created_at 
+    """)
     fun observeAllTasks(): Flow<List<TaskEntity>>
 
 
     /*
-     * Active tasks (excluding archived)
+     * Returns active (not completed, not archived) tasks.
      */
     @Query("""
         SELECT * FROM tasks 
         WHERE is_completed = 0 AND is_archived = 0
-        ORDER BY created_at DESC
+        ORDER BY created_at 
     """)
     fun observeActiveTasks(): Flow<List<TaskEntity>>
 
 
     /*
-     * Completed tasks (excluding archived)
+     * Returns completed (not archived) tasks.
      */
     @Query("""
         SELECT * FROM tasks 
         WHERE is_completed = 1 AND is_archived = 0
-        ORDER BY completed_at DESC
+        ORDER BY completed_at 
     """)
     fun observeCompletedTasks(): Flow<List<TaskEntity>>
 
 
     /*
-     * Get single task by ID
+     * Returns a single task by id.
      */
     @Query("SELECT * FROM tasks WHERE id = :taskId")
     suspend fun getTaskById(taskId: Long): TaskEntity?
@@ -96,7 +105,7 @@ interface TaskDao {
 
 
     /*
-     * Update only task status
+     * Updates only task status.
      */
     @Query("""
         UPDATE tasks
