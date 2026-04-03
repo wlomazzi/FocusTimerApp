@@ -30,6 +30,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -61,7 +62,6 @@ fun EditTaskScreen(
     val taskState by viewModel.task.collectAsState()
     val clients by viewModel.clients.collectAsState(initial = emptyList())
     val sessions by viewModel.editableSessions.collectAsState(initial = emptyList())
-
 
     LaunchedEffect(taskId) {
         viewModel.loadTask(taskId)
@@ -96,6 +96,13 @@ fun EditTaskScreen(
 
     var scheduledDate by remember(task?.id) {
         mutableStateOf(task?.scheduledStartDate ?: "")
+    }
+
+    /*
+     * Archive state bound to the current task.
+     */
+    var isArchived by remember(task?.id) {
+        mutableStateOf(task?.isArchived ?: false)
     }
 
     val context = LocalContext.current
@@ -162,7 +169,6 @@ fun EditTaskScreen(
             )
 
             Text("Assign to Client *")
-            var expanded by remember { mutableStateOf(false) }
 
             OutlinedTextField(
                 value = selectedClientName,
@@ -225,6 +231,7 @@ fun EditTaskScreen(
                     text = "Completion Details",
                     style = MaterialTheme.typography.titleMedium
                 )
+
                 sessions.forEachIndexed { index, session ->
                     EditableSessionCard(
                         index = index + 1,
@@ -243,6 +250,37 @@ fun EditTaskScreen(
                 }
             }
 
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Archive Task",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "Hide this task from dashboard",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Switch(
+                        checked = isArchived,
+                        onCheckedChange = { isArchived = it }
+                    )
+                }
+            }
+
             Button(
                 onClick = {
                     task?.let { originalTask ->
@@ -255,6 +293,7 @@ fun EditTaskScreen(
                             clientId = selectedClientId,
                             hourlyRateCents = updatedRateCents,
                             scheduledStartDate = scheduledDate,
+                            isArchived = isArchived,
                             updatedAt = LocalDateTime.now()
                                 .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
                         )
@@ -319,17 +358,6 @@ private fun EditableSessionCard(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-/*
-            Text(
-                text = "Duration: ${formatSessionTime(session.original.durationSeconds.toLong())}",
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Text(
-                text = "Earned: ${formatSessionCurrency(session.original.earnedCents)}",
-                color = MaterialTheme.colorScheme.onSurface
-            )
-*/
 
             val durationSeconds = remember(session.startedAt, session.endedAt) {
                 val end = session.endedAt ?: return@remember 0L
@@ -480,8 +508,6 @@ private fun EditableSessionCard(
         )
     }
 }
-
-
 
 private fun formatSessionTime(seconds: Long): String {
     val hours = seconds / 3600

@@ -37,5 +37,7 @@ data class Task(
     val createdAt: String,
 
     /** Last update timestamp in ISO datetime format. */
-    val updatedAt: String
+    val updatedAt: String,
+
+    val isArchived: Boolean = false
 )

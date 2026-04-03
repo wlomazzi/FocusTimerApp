@@ -24,7 +24,8 @@ fun TaskEntity.toDomain(
         updatedAt = updatedAt,
         completedAt = completedAt,
         totalEarnedCents = totalEarnedCents,
-        totalSeconds = totalSeconds
+        totalSeconds = totalSeconds,
+        isArchived = this.isArchived
     )
 }
 
@@ -43,6 +44,7 @@ fun Task.toEntity(): TaskEntity {
         isCompleted = isCompleted,
         completedAt = completedAt,
         createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        isArchived = this.isArchived
     )
 }

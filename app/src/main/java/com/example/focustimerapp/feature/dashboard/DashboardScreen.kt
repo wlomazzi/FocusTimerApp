@@ -13,6 +13,10 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,21 +40,28 @@ fun DashboardScreen(
     onClientsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {}
 ) {
+    var showArchived by remember { mutableStateOf(false) }
 
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
-
     val runningSession = uiState.runningSession
 
+    /*
+     * Split tasks by archive state.
+     * Archived tasks are displayed in their own section.
+     */
+    val activeTasks = uiState.tasks.filter { !it.isArchived }
+    val archivedTasks = uiState.tasks.filter { it.isArchived }
+
     val runningTask =
-        uiState.tasks.find { it.id == runningSession?.taskId }
+        activeTasks.find { it.id == runningSession?.taskId }
 
     val pendingTasks =
-        uiState.tasks.filter { task ->
+        activeTasks.filter { task ->
             !task.isCompleted && task.id != runningSession?.taskId
         }
 
     val completedTasks =
-        uiState.tasks.filter { it.isCompleted }
+        activeTasks.filter { it.isCompleted }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -68,7 +79,7 @@ fun DashboardScreen(
                 .padding(padding),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
-        ){
+        ) {
 
             item {
                 SummaryCard(
@@ -84,7 +95,37 @@ fun DashboardScreen(
                 )
             }
 
-            //RUNNING / PAUSED TASKS
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    Column {
+                        Text(
+                            text = "Show archived tasks",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Include inactive tasks in dashboard",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Switch(
+                        checked = showArchived,
+                        onCheckedChange = { showArchived = it }
+                    )
+                }
+            }
+
+            /*
+             * Running or paused task section.
+             * Archived tasks are intentionally excluded.
+             */
             if (runningSession != null && runningTask != null) {
 
                 item {
@@ -92,7 +133,6 @@ fun DashboardScreen(
                 }
 
                 item {
-
                     RunningTimerCard(
                         task = runningTask,
                         session = runningSession,
@@ -103,8 +143,9 @@ fun DashboardScreen(
                 }
             }
 
-
-            // PENDING TASKS
+            /*
+             * Pending tasks section.
+             */
             item {
                 SectionHeaderWithFab(
                     title = "Pending Tasks",
@@ -127,8 +168,9 @@ fun DashboardScreen(
                 )
             }
 
-
-            // COMPLETED TASKS
+            /*
+             * Completed tasks section.
+             */
             if (completedTasks.isNotEmpty()) {
 
                 item {
@@ -137,6 +179,28 @@ fun DashboardScreen(
 
                 items(
                     items = completedTasks,
+                    key = { it.id }
+                ) { task ->
+                    CompletedTaskCard(
+                        task = task,
+                        onDetailsClick = onCompletedTaskClick,
+                        onEditClick = onEditTaskClick
+                    )
+                }
+            }
+
+            /*
+             * Archived tasks section.
+             * This section is only displayed when the toggle is enabled.
+             */
+            if (showArchived && archivedTasks.isNotEmpty()) {
+
+                item {
+                    SectionTitle("Archived Tasks")
+                }
+
+                items(
+                    items = archivedTasks,
                     key = { it.id }
                 ) { task ->
                     CompletedTaskCard(
@@ -273,7 +337,6 @@ private fun SummaryCard(
     }
 }
 
-
 @Composable
 private fun ActiveTaskCard(
     task: Task,
@@ -341,7 +404,6 @@ private fun ActiveTaskCard(
                 onClick = onPlayClick,
                 enabled = !isAnotherTaskRunning,
                 modifier = Modifier.size(56.dp),
-                //shape = RoundedCornerShape(12.dp),
                 shape = CircleShape,
                 colors = IconButtonDefaults.filledTonalIconButtonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -362,7 +424,7 @@ private fun CompletedTaskCard(
     task: Task,
     onDetailsClick: (Long) -> Unit,
     onEditClick: (Long) -> Unit
-){
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -379,7 +441,7 @@ private fun CompletedTaskCard(
         ) {
 
             /*
-             Left side - Task basic information
+             * Left side - Task basic information
              */
             Column(
                 modifier = Modifier.weight(1f)
@@ -398,7 +460,7 @@ private fun CompletedTaskCard(
             }
 
             /*
-             Right side - Values + actions
+             * Right side - Values and actions
              */
             Column(
                 horizontalAlignment = Alignment.End
@@ -423,9 +485,6 @@ private fun CompletedTaskCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
 
-                    /*
-                     Edit action
-                     */
                     IconButton(
                         onClick = { onEditClick(task.id) }
                     ) {
@@ -435,9 +494,6 @@ private fun CompletedTaskCard(
                         )
                     }
 
-                    /*
-                     Details navigation
-                     */
                     TextButton(
                         onClick = { onDetailsClick(task.id) }
                     ) {
@@ -458,7 +514,6 @@ private fun RateChip(hourlyRateCents: Long) {
     )
 }
 
-
 @Composable
 private fun SectionHeaderWithFab(
     title: String,
@@ -469,12 +524,7 @@ private fun SectionHeaderWithFab(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-
-        /*
-         Force correct spacing between title and FAB
-         */
         horizontalArrangement = Arrangement.SpaceBetween,
-
         verticalAlignment = Alignment.CenterVertically
     ) {
 
@@ -485,17 +535,8 @@ private fun SectionHeaderWithFab(
 
         FloatingActionButton(
             onClick = onFabClick,
-
-            /*
-             Explicit circular shape
-             */
             shape = CircleShape,
-
-            /*
-             Force correct FAB size
-             */
             modifier = Modifier.size(56.dp),
-
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary
         ) {
@@ -506,7 +547,6 @@ private fun SectionHeaderWithFab(
         }
     }
 }
-
 
 @Composable
 private fun SectionTitle(title: String) {

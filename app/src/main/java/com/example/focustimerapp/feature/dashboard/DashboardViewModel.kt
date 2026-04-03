@@ -45,21 +45,35 @@ class DashboardViewModel @Inject constructor(
             periodFilter
         ) { tasks, runningSession, period ->
 
-            val filteredTasks =
-                filterTasksByPeriod(tasks, period)
+            /*
+             * Separate archived tasks first
+             */
+            val archivedTasks = tasks.filter { it.isArchived }
 
             /*
-             * DO NOT remove the running task from the list.
-             * The UI (DashboardScreen) will decide how to display it.
+             * Apply period filter ONLY to active tasks
              */
+            val activeTasks =
+                filterTasksByPeriod(
+                    tasks.filter { !it.isArchived },
+                    period
+                )
+
+            /*
+             * Merge lists ensuring no duplicates
+             */
+            val finalTasks =
+                (activeTasks + archivedTasks)
+                    .distinctBy { it.id }
+
             val totalEarnedCents =
-                filteredTasks.sumOf { it.totalEarnedCents }
+                activeTasks.sumOf { it.totalEarnedCents }
 
             val totalSeconds =
-                filteredTasks.sumOf { it.totalSeconds }
+                activeTasks.sumOf { it.totalSeconds }
 
             DashboardUiState(
-                tasks = filteredTasks,
+                tasks = finalTasks,
                 totalEarningsCents = totalEarnedCents,
                 totalSeconds = totalSeconds,
                 runningSession = runningSession,
@@ -80,7 +94,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     /*
-     * Filter tasks by period
+     * Filter tasks by period (ONLY active tasks should reach here)
      */
     private fun filterTasksByPeriod(
         tasks: List<Task>,
@@ -106,9 +120,6 @@ class DashboardViewModel @Inject constructor(
 
             PeriodFilter.ALL ->
                 return tasks
-
-/*            PeriodFilter.CUSTOM ->
-                return tasks*/
         }
 
         return tasks.filter { task ->
