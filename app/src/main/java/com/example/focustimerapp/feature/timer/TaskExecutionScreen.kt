@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -109,15 +110,13 @@ fun TaskExecutionScreen(
                     )
                 }
 
-                items(
-                    items = state.sessions.sortedByDescending { it.startedAt },
-                    key = { it.id }
-                ) { session ->
-
-                    val index = state.sessions.indexOf(session) + 1
+                itemsIndexed(
+                    items = state.sessions.sortedBy { it.startedAt },
+                    key = { _, session -> session.id }
+                ) { index, session ->
 
                     SessionCard(
-                        index = index,
+                        index = index + 1,
                         session = session
                     )
                 }

@@ -232,7 +232,9 @@ fun EditTaskScreen(
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                sessions.forEachIndexed { index, session ->
+                sessions
+                    .sortedBy { it.startedAt }
+                    .forEachIndexed { index, session ->
                     EditableSessionCard(
                         index = index + 1,
                         session = session,

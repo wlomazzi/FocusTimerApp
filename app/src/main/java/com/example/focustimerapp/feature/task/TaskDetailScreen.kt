@@ -83,7 +83,7 @@ fun TaskDetailScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     LazyColumn {
-                        items(data.sessions) { session ->
+                        items(data.sessions.sortedBy { it.startedAt }) { session ->
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
