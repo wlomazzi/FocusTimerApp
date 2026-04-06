@@ -9,11 +9,24 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+<<<<<<< HEAD
+=======
+/**
+ * ViewModel responsible for client management.
+ * Handles list observation, form state, validation, and persistence.
+ */
+>>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
 @HiltViewModel
 class ClientListViewModel @Inject constructor(
     private val clientRepository: ClientRepository
 ) : ViewModel() {
 
+<<<<<<< HEAD
+=======
+    /*
+     * Clients list stream.
+     */
+>>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
     val clients: StateFlow<List<Client>> =
         clientRepository.observeClients()
             .stateIn(
@@ -22,9 +35,21 @@ class ClientListViewModel @Inject constructor(
                 initialValue = emptyList()
             )
 
+<<<<<<< HEAD
     private val _formState = MutableStateFlow(ClientFormState())
     val formState: StateFlow<ClientFormState> = _formState.asStateFlow()
 
+=======
+    /*
+     * UI state for form operations (Add/Edit).
+     */
+    private val _formState = MutableStateFlow(ClientFormState())
+    val formState: StateFlow<ClientFormState> = _formState.asStateFlow()
+
+    /*
+     * Loads a client for editing.
+     */
+>>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
     fun loadClient(clientId: Long) {
         if (clientId == 0L) return
 
@@ -42,6 +67,12 @@ class ClientListViewModel @Inject constructor(
         }
     }
 
+<<<<<<< HEAD
+=======
+    /*
+     * Updates local form state fields.
+     */
+>>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
     fun updateName(value: String) {
         _formState.update { it.copy(name = value) }
     }
@@ -54,6 +85,12 @@ class ClientListViewModel @Inject constructor(
         _formState.update { it.copy(companyName = value) }
     }
 
+<<<<<<< HEAD
+=======
+    /*
+     * Saves client (Add or Edit).
+     */
+>>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
     fun saveClient() {
         viewModelScope.launch {
 
@@ -77,16 +114,23 @@ class ClientListViewModel @Inject constructor(
                 return@launch
             }
 
+<<<<<<< HEAD
             val existingClient = if (state.id != 0L) {
                 clientRepository.getClientById(state.id)
             } else null
 
+=======
+>>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
             val client = Client(
                 id = state.id,
                 name = state.name.trim(),
                 email = normalizedEmail,
+<<<<<<< HEAD
                 companyName = state.companyName.trim().ifBlank { null },
                 isActive = existingClient?.isActive ?: true
+=======
+                companyName = state.companyName.trim().ifBlank { null }
+>>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
             )
 
             if (state.id == 0L) {
@@ -104,21 +148,39 @@ class ClientListViewModel @Inject constructor(
         }
     }
 
+<<<<<<< HEAD
     fun updateClientStatus(clientId: Long, isActive: Boolean) {
         viewModelScope.launch {
             clientRepository.updateClientStatus(clientId, isActive)
         }
     }
 
+=======
+    /*
+     * Clears success flag after navigation.
+     */
+>>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
     fun clearSuccess() {
         _formState.update { it.copy(isSuccess = false) }
     }
 
+<<<<<<< HEAD
+=======
+    /*
+     * Clears error after Snackbar is shown.
+     */
+>>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
     fun clearError() {
         _formState.update { it.copy(errorMessage = null) }
     }
 }
 
+<<<<<<< HEAD
+=======
+/*
+ * UI state data holder for client form.
+ */
+>>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
 data class ClientFormState(
     val id: Long = 0L,
     val name: String = "",

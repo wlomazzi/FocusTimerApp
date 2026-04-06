@@ -20,7 +20,11 @@ import com.example.focustimerapp.core.database.entity.WorkSession
         TaskEntity::class,
         WorkSession::class
     ],
+<<<<<<< HEAD
     version = 3,
+=======
+    version = 1,
+>>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
     exportSchema = true
 )
 @TypeConverters(DatabaseConverters::class)
