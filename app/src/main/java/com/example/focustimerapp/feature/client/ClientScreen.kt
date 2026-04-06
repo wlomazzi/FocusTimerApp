@@ -157,14 +157,10 @@ fun ClientScreen(
                 ) { client ->
                     ClientItem(
                         client = client,
-<<<<<<< HEAD
                         onClick = { onClientClick(client.id) },
                         onToggleActive = { isActive ->
                             viewModel.updateClientStatus(client.id, isActive)
                         }
-=======
-                        onClick = { onClientClick(client.id) }
->>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
                     )
                 }
             }
@@ -175,12 +171,8 @@ fun ClientScreen(
 @Composable
 private fun ClientItem(
     client: Client,
-<<<<<<< HEAD
     onClick: () -> Unit,
     onToggleActive: (Boolean) -> Unit
-=======
-    onClick: () -> Unit
->>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
 ) {
     Card(
         onClick = onClick,
@@ -196,7 +188,6 @@ private fun ClientItem(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-<<<<<<< HEAD
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -237,27 +228,6 @@ private fun ClientItem(
                 Switch(
                     checked = client.isActive,
                     onCheckedChange = onToggleActive
-=======
-            Text(
-                text = client.name,
-                style = MaterialTheme.typography.titleLarge
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = client.email,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            client.companyName?.let {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
->>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
                 )
             }
         }

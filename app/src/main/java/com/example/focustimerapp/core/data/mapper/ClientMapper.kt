@@ -8,12 +8,8 @@ fun ClientEntity.toDomain(): Client =
         id = clientId,
         name = name,
         email = email,
-<<<<<<< HEAD
         companyName = companyName,
         isActive = isActive
-=======
-        companyName = companyName
->>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
     )
 
 fun Client.toEntity(): ClientEntity =
@@ -21,10 +17,6 @@ fun Client.toEntity(): ClientEntity =
         clientId = id,
         name = name,
         email = email,
-<<<<<<< HEAD
         companyName = companyName,
         isActive = isActive
-=======
-        companyName = companyName
->>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
     )

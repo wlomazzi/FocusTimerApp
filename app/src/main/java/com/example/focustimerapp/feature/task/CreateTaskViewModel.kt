@@ -26,11 +26,7 @@ class CreateTaskViewModel @Inject constructor(
      * Exposes the list of clients as StateFlow for dropdown usage.
      */
     val clients: StateFlow<List<Client>> =
-<<<<<<< HEAD
         clientRepository.observeActiveClients()
-=======
-        clientRepository.observeClients()
->>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),

@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ClientDao {
 
-<<<<<<< HEAD
 
     @Query("SELECT * FROM clients ORDER BY name ASC")
     fun observeClients(): Flow<List<ClientEntity>>
@@ -38,20 +37,4 @@ interface ClientDao {
 
     @Query("UPDATE clients SET isActive = :isActive WHERE clientId = :clientId")
     suspend fun updateClientStatus(clientId: Long, isActive: Boolean)
-=======
-    @Query("SELECT * FROM clients ORDER BY name ASC")
-    fun observeClients(): Flow<List<ClientEntity>>
-
-    @Query("SELECT * FROM clients WHERE clientId = :id LIMIT 1")
-    suspend fun getById(id: Long): ClientEntity?
-
-    @Query("SELECT * FROM clients WHERE email = :email LIMIT 1")
-    suspend fun getByEmail(email: String): ClientEntity?
-
-    @Insert
-    suspend fun insert(client: ClientEntity): Long
-
-    @Update
-    suspend fun update(client: ClientEntity)
->>>>>>> e73227e05336b7ff4a19e96e56a7da79ff7f58fe
 }
