@@ -55,13 +55,12 @@ fun DashboardScreen(
     var selectedEndDate by remember { mutableStateOf<LocalDate?>(null) }
     var isCustomDateSelected by remember { mutableStateOf(false) }
 
+    val dateRangePickerState = rememberDateRangePickerState()
+
     if (uiState.period != PeriodFilter.ALL && isCustomDateSelected) {
         isCustomDateSelected = false
     }
-    /*
-     * Split tasks by archive state.
-     * Archived tasks are displayed in their own section.
-     */
+
     val activeTasks = uiState.tasks.filter { !it.isArchived }
     val archivedTasks = uiState.tasks.filter { it.isArchived }
 
@@ -100,6 +99,7 @@ fun DashboardScreen(
                     totalSeconds = uiState.totalSeconds
                 )
             }
+
             item {
                 Row(
                     modifier = Modifier
@@ -112,6 +112,7 @@ fun DashboardScreen(
                         selected = uiState.period,
                         onFilterSelected = viewModel::setPeriod
                     )
+
                     IconButton(
                         onClick = { showDatePicker = true }
                     ) {
@@ -122,10 +123,7 @@ fun DashboardScreen(
                     }
                 }
 
-
                 if (showDatePicker) {
-
-                    val dateRangePickerState = rememberDateRangePickerState()
 
                     DatePickerDialog(
                         onDismissRequest = { showDatePicker = false },
@@ -153,6 +151,7 @@ fun DashboardScreen(
                                             isCustomDateSelected = true
                                         }
                                     }
+
                                     showDatePicker = false
                                 }
                             ) {
@@ -172,6 +171,7 @@ fun DashboardScreen(
                         )
                     }
                 }
+
                 if (
                     selectedStartDate != null &&
                     selectedEndDate != null &&
@@ -193,8 +193,6 @@ fun DashboardScreen(
                     }
                 }
             }
-
-
 
             item {
                 Row(
@@ -223,10 +221,6 @@ fun DashboardScreen(
                 }
             }
 
-            /*
-             * Running or paused task section.
-             * Archived tasks are intentionally excluded.
-             */
             if (runningSession != null && runningTask != null) {
 
                 item {
@@ -244,9 +238,6 @@ fun DashboardScreen(
                 }
             }
 
-            /*
-             * Pending tasks section.
-             */
             item {
                 SectionHeaderWithFab(
                     title = "Pending Tasks",
@@ -269,9 +260,6 @@ fun DashboardScreen(
                 )
             }
 
-            /*
-             * Completed tasks section.
-             */
             if (completedTasks.isNotEmpty()) {
 
                 item {
@@ -290,10 +278,6 @@ fun DashboardScreen(
                 }
             }
 
-            /*
-             * Archived tasks section.
-             * This section is only displayed when the toggle is enabled.
-             */
             if (showArchived && archivedTasks.isNotEmpty()) {
 
                 item {
@@ -539,9 +523,6 @@ private fun CompletedTaskCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            /*
-             * Left side - Task basic information
-             */
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -558,9 +539,6 @@ private fun CompletedTaskCard(
                 RateChip(task.hourlyRateCents)
             }
 
-            /*
-             * Right side - Values and actions
-             */
             Column(
                 horizontalAlignment = Alignment.End
             ) {
@@ -606,7 +584,6 @@ private fun CompletedTaskCard(
 
 @Composable
 private fun RateChip(hourlyRateCents: Long) {
-
     AssistChip(
         onClick = {},
         label = { Text("${formatCurrencyFromCents(hourlyRateCents)}/h") }

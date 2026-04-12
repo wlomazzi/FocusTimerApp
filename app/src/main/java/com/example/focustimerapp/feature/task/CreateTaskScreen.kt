@@ -28,7 +28,6 @@ fun CreateTaskScreen(
     onCreateTaskClick: () -> Unit
 ) {
 
-    // Collects clients from the database and keeps UI updated automatically.
     val clients by viewModel.clients.collectAsStateWithLifecycle()
 
     var taskDescription by remember { mutableStateOf("") }
@@ -37,6 +36,12 @@ fun CreateTaskScreen(
     var hourlyRate by remember { mutableStateOf("") }
     var startDate by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
+
+    // ERROR STATES
+    var descriptionError by remember { mutableStateOf(false) }
+    var clientError by remember { mutableStateOf(false) }
+    var hourlyRateError by remember { mutableStateOf(false) }
+    var startDateError by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -47,22 +52,14 @@ fun CreateTaskScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 },
-
-                /*
-                 Apply primary color to keep consistency across all screens
-                 */
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
                     navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
-
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -76,17 +73,24 @@ fun CreateTaskScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // Task description input field.
+            // DESCRIPTION
             OutlinedTextField(
                 value = taskDescription,
-                onValueChange = { taskDescription = it },
+                onValueChange = {
+                    taskDescription = it
+                    descriptionError = false
+                },
                 label = { Text("Task Description *") },
                 placeholder = { Text("Enter task description") },
+                isError = descriptionError,
+                supportingText = {
+                    if (descriptionError) Text("Required field")
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp)
             )
 
-            // Client selection dropdown populated from database.
+            // CLIENT
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded }
@@ -97,6 +101,10 @@ fun CreateTaskScreen(
                     readOnly = true,
                     label = { Text("Assign to Client *") },
                     placeholder = { Text("Select a client") },
+                    isError = clientError,
+                    supportingText = {
+                        if (clientError) Text("Required field")
+                    },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                     },
@@ -110,14 +118,13 @@ fun CreateTaskScreen(
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
-
-                    // Iterates through real clients coming from Room database.
                     clients.forEach { client ->
                         DropdownMenuItem(
                             text = { Text(client.name) },
                             onClick = {
                                 selectedClientName = client.name
                                 selectedClientId = client.id
+                                clientError = false
                                 expanded = false
                             }
                         )
@@ -125,12 +132,19 @@ fun CreateTaskScreen(
                 }
             }
 
-            // Hourly rate numeric input field.
+            // HOURLY RATE
             OutlinedTextField(
                 value = hourlyRate,
-                onValueChange = { hourlyRate = it },
+                onValueChange = {
+                    hourlyRate = it
+                    hourlyRateError = false
+                },
                 label = { Text("Hourly Rate ($) *") },
                 placeholder = { Text("0.00") },
+                isError = hourlyRateError,
+                supportingText = {
+                    if (hourlyRateError) Text("Required field")
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 keyboardOptions = KeyboardOptions(
@@ -142,13 +156,13 @@ fun CreateTaskScreen(
             val calendar = Calendar.getInstance()
             val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
-            // Opens native Android date picker dialog.
             fun openDatePicker() {
                 DatePickerDialog(
                     context,
                     { _, year, month, dayOfMonth ->
                         calendar.set(year, month, dayOfMonth)
                         startDate = dateFormatter.format(calendar.time)
+                        startDateError = false
                     },
                     calendar.get(Calendar.YEAR),
                     calendar.get(Calendar.MONTH),
@@ -156,20 +170,21 @@ fun CreateTaskScreen(
                 ).show()
             }
 
-            // Scheduled start date field with calendar picker.
+            // DATE
             OutlinedTextField(
                 value = startDate,
                 onValueChange = {},
                 label = { Text("Scheduled Start Date *") },
                 placeholder = { Text("dd/mm/yyyy") },
+                isError = startDateError,
+                supportingText = {
+                    if (startDateError) Text("Required field")
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 trailingIcon = {
                     IconButton(onClick = { openDatePicker() }) {
-                        Icon(
-                            imageVector = Icons.Default.DateRange,
-                            contentDescription = "Open calendar"
-                        )
+                        Icon(Icons.Default.DateRange, contentDescription = "Open calendar")
                     }
                 },
                 readOnly = true
@@ -177,24 +192,28 @@ fun CreateTaskScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Creates a new task only if required fields are filled.
             Button(
                 onClick = {
 
-                    if (
-                        taskDescription.isNotBlank() &&
-                        hourlyRate.isNotBlank() &&
-                        selectedClientId != 0L
-                    ) {
+                    // VALIDATION
+                    descriptionError = taskDescription.isBlank()
+                    clientError = selectedClientId == 0L
+                    hourlyRateError = hourlyRate.isBlank()
+                    startDateError = startDate.isBlank()
 
-                        // Converts dd/MM/yyyy to ISO yyyy-MM-dd
-                        val isoDate = if (startDate.isNotBlank()) {
-                            val parsedDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                                .parse(startDate)
+                    val isValid =
+                        !descriptionError &&
+                                !clientError &&
+                                !hourlyRateError &&
+                                !startDateError
 
-                            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                                .format(parsedDate!!)
-                        } else null
+                    if (isValid) {
+
+                        val isoDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                            .format(
+                                SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                                    .parse(startDate)!!
+                            )
 
                         viewModel.createTask(
                             clientId = selectedClientId,
